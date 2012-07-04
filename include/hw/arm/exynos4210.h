@@ -126,6 +126,21 @@ void exynos4210_combiner_get_gpioin(Exynos4210Irq *irqs, DeviceState *dev,
         int ext);
 
 /*
+ * Interface for exynos4210 Clock Management Units (CMUs)
+ */
+typedef enum {
+    UNSPECIFIED_CMU = -1,
+    EXYNOS4210_CMU_LEFTBUS,
+    EXYNOS4210_CMU_RIGHTBUS,
+    EXYNOS4210_CMU_TOP,
+    EXYNOS4210_CMU_DMC,
+    EXYNOS4210_CMU_CPU,
+    EXYNOS4210_CMU_NUMBER
+} Exynos4210Cmu;
+
+DeviceState *exynos4210_cmu_create(hwaddr addr, Exynos4210Cmu cmu);
+
+/*
  * exynos4210 UART
  */
 DeviceState *exynos4210_uart_create(hwaddr addr,
