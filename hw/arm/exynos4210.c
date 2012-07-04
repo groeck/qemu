@@ -31,6 +31,13 @@
 
 #define EXYNOS4210_CHIPID_ADDR         0x10000000
 
+/* CMUs */
+#define EXYNOS4210_CMU_LEFTBUS_BASE_ADDR     0x10034000
+#define EXYNOS4210_CMU_RIGHTBUS_BASE_ADDR    0x10038000
+#define EXYNOS4210_CMU_TOP_BASE_ADDR         0x1003C000
+#define EXYNOS4210_CMU_DMC_BASE_ADDR         0x10040000
+#define EXYNOS4210_CMU_CPU_BASE_ADDR         0x10044000
+
 /* PWM */
 #define EXYNOS4210_PWM_BASE_ADDR       0x139D0000
 
@@ -301,6 +308,15 @@ Exynos4210State *exynos4210_init(MemoryRegion *system_mem,
     * loader uses PMU INFORM5 register as a holding pen.
     */
     sysbus_create_simple("exynos4210.pmu", EXYNOS4210_PMU_BASE_ADDR, NULL);
+
+    /* CMUs */
+    exynos4210_cmu_create(EXYNOS4210_CMU_LEFTBUS_BASE_ADDR,
+                          EXYNOS4210_CMU_LEFTBUS);
+    exynos4210_cmu_create(EXYNOS4210_CMU_RIGHTBUS_BASE_ADDR,
+                          EXYNOS4210_CMU_RIGHTBUS);
+    exynos4210_cmu_create(EXYNOS4210_CMU_TOP_BASE_ADDR, EXYNOS4210_CMU_TOP);
+    exynos4210_cmu_create(EXYNOS4210_CMU_DMC_BASE_ADDR, EXYNOS4210_CMU_DMC);
+    exynos4210_cmu_create(EXYNOS4210_CMU_CPU_BASE_ADDR, EXYNOS4210_CMU_CPU);
 
     /* PWM */
     sysbus_create_varargs("exynos4210.pwm", EXYNOS4210_PWM_BASE_ADDR,
