@@ -390,7 +390,7 @@ static void patch_instruction(VAPICROMState *s, CPUX86State *env, target_ulong i
     TranslationBlock *current_tb;
     target_ulong current_pc = 0;
     target_ulong current_cs_base = 0;
-    int current_flags = 0;
+    uint64_t current_flags = 0;
 
     if (smp_cpus == 1) {
         handlers = &s->rom_state.up;

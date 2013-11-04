@@ -717,7 +717,7 @@ void cpu_restore_state2(CPUSPARCState *env, uintptr_t retaddr);
 #define TB_FLAG_AM_ENABLED (1 << 5)
 
 static inline void cpu_get_tb_cpu_state(CPUSPARCState *env, target_ulong *pc,
-                                        target_ulong *cs_base, int *flags)
+                                        target_ulong *cs_base, uint64_t *flags)
 {
     *pc = env->pc;
     *cs_base = env->npc;

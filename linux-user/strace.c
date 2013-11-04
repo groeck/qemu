@@ -433,8 +433,12 @@ UNUSED static struct flags mmap_prot_flags[] = {
     FLAG_GENERIC(PROT_READ),
     FLAG_GENERIC(PROT_WRITE),
     FLAG_TARGET(PROT_SEM),
+#if defined(PROT_GROWSDOWN)
     FLAG_GENERIC(PROT_GROWSDOWN),
+#endif
+#if defined(PROT_GROWSUP)
     FLAG_GENERIC(PROT_GROWSUP),
+#endif
     FLAG_END,
 };
 

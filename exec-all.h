@@ -89,7 +89,7 @@ int cpu_restore_state(struct TranslationBlock *tb,
 void QEMU_NORETURN cpu_resume_from_signal(CPUArchState *env1, void *puc);
 void QEMU_NORETURN cpu_io_recompile(CPUArchState *env, uintptr_t retaddr);
 TranslationBlock *tb_gen_code(CPUArchState *env, 
-                              target_ulong pc, target_ulong cs_base, int flags,
+                              target_ulong pc, target_ulong cs_base, uint64_t flags,
                               int cflags);
 void cpu_exec_init(CPUArchState *env);
 void QEMU_NORETURN cpu_loop_exit(CPUArchState *env1);
@@ -133,6 +133,7 @@ static inline void tlb_flush(CPUArchState *env, int flush_global)
 #if defined(__arm__) || defined(_ARCH_PPC) \
     || defined(__x86_64__) || defined(__i386__) \
     || defined(__sparc__) \
+    || defined(__metag__) \
     || defined(CONFIG_TCG_INTERPRETER)
 #define USE_DIRECT_JUMP
 #endif
@@ -170,6 +171,11 @@ struct TranslationBlock {
     struct TranslationBlock *jmp_next[2];
     struct TranslationBlock *jmp_first;
     uint32_t icount;
+
+#ifdef TARGET_META
+    /* bit n set to 1 if template n is instantiated in this block */
+    uint16_t tplt_instantiations;
+#endif
 };
 
 static inline unsigned int tb_jmp_cache_hash_page(target_ulong pc)
@@ -217,6 +223,9 @@ static inline void tb_set_jmp_target1(uintptr_t jmp_addr, uintptr_t addr)
     *(uint32_t *)jmp_addr = addr - (jmp_addr + 4);
     /* no need to flush icache explicitly */
 }
+#elif defined(__metag__)
+void metag_tb_set_jmp_target(uintptr_t jmp_addr, uintptr_t addr);
+#define tb_set_jmp_target1 metag_tb_set_jmp_target
 #elif defined(__arm__)
 static inline void tb_set_jmp_target1(uintptr_t jmp_addr, uintptr_t addr)
 {

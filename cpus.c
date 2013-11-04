@@ -456,6 +456,15 @@ static bool cpu_can_run(CPUState *cpu)
     if (cpu->stopped || !runstate_is_running()) {
         return false;
     }
+#ifdef TARGET_META
+    {
+        CPUMETAState *env = &META_CPU(cpu)->env;
+
+        if (env->global->lock & META_LOCKH_THR(env->thread_num)) {
+            return true;
+        }
+    }
+#endif
     return true;
 }
 

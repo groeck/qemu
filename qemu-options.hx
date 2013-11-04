@@ -2168,6 +2168,20 @@ for easier testing of various kernels.
 @table @option
 ETEXI
 
+DEF("ldr", HAS_ARG, QEMU_OPTION_ldr, \
+    "-ldr ldrImage[,pagesize=sz]\n"
+    "                load 'ldrImage' prior to loading kernel\n"
+    "                use 'sz' as the page size [default=0 (flat)]\n",
+    QEMU_ARCH_META)
+STEXI
+@item -ldr @var{ldrImage}[,pagesize=@var{sz}]
+@findex -ldr
+Load @var{ldrImage} to set up the MMU and threads prior to loading the kernel.
+@var{ldrImage} is an LDR image as produced by LDLK.
+@var{sz} is the page size of the LDR image bytes. It defaults to 0 which
+indicates it should be treated as a flat LDR image.
+ETEXI
+
 DEF("kernel", HAS_ARG, QEMU_OPTION_kernel, \
     "-kernel bzImage use 'bzImage' as kernel image\n", QEMU_ARCH_ALL)
 STEXI
@@ -2207,6 +2221,16 @@ STEXI
 @findex -dtb
 Use @var{file} as a device tree binary (dtb) image and pass it to the kernel
 on boot.
+ETEXI
+
+DEF("bootthread", HAS_ARG, QEMU_OPTION_bootthread, \
+    "-bootthread t   boot the kernel on thread 't'\n", QEMU_ARCH_META)
+STEXI
+@item -bootthread @var{thread}
+@findex -bootthread
+Boot the kernel on thread @var{thread}. If an ldr is specified which only
+starts one thread, this defaults to that thread. Otherwise the default
+is thread 0.
 ETEXI
 
 STEXI
@@ -2456,6 +2480,32 @@ STEXI
 @findex -s
 Shorthand for -gdb tcp::1234, i.e. open a gdbserver on TCP port 1234
 (@pxref{gdb_usage}).
+ETEXI
+
+DEF("sap", HAS_ARG, QEMU_OPTION_sap, \
+    "-sap shared|port|inetd\n" \
+    "                Specify method for SAP to communicate with DA-Sim\n" \
+    "                shared: use shared memory specified in stdin\n" \
+    "                port: specify a port number to listen on\n" \
+    "                inetd: use inetd\n", \
+    QEMU_ARCH_META)
+STEXI
+@item -sap shared|@var{port}|inetd
+@findex -sap
+Specify method for SAP to communicate with DA-Sim
+shared: use shared memory specified in stdin
+port: specify a port number to listen on
+inetd: use inetd
+ETEXI
+
+DEF("simmagic", 0, QEMU_OPTION_simmagic, \
+    "-simmagic       enable handling of meta simulator magic instructions\n",
+    QEMU_ARCH_META)
+STEXI
+@item -simmagic
+@findex -simmagic
+Enables handling of magic instructions used by meta simulators, and typically
+executed as part of the InSimStartEvt and InSimStopEvt functions.
 ETEXI
 
 DEF("d", HAS_ARG, QEMU_OPTION_d, \
@@ -2940,6 +2990,39 @@ DEF("object", HAS_ARG, QEMU_OPTION_object,
     "                property must be set.  These objects are placed in the\n"
     "                '/objects' path.\n",
     QEMU_ARCH_ALL)
+
+DEF("metatrace", HAS_ARG, QEMU_OPTION_metatrace, \
+    "-metatrace event1,...\n" \
+    "                Trace certain events in the running of the target code\n" \
+    "                (use -metatrace ? for a list of trace events)\n",
+    QEMU_ARCH_META)
+STEXI
+@item -metatrace
+@findex -metatrace
+Trace certain events in the running of the target code like memory accesses.
+ETEXI
+
+DEF("metatracefile", HAS_ARG, QEMU_OPTION_metatracefile, \
+    "-metatracefile <file>\n" \
+    "                Specify the trace file to output Meta trace events to\n" \
+    "                (default: qemu.trace)\n", \
+    QEMU_ARCH_META)
+STEXI
+@item -metatracefile @var{file}
+@findex -metatracefile
+Write Meta trace event data to @var{file}.
+ETEXI
+
+DEF("metatracelimit", HAS_ARG, QEMU_OPTION_metatracelimit, \
+    "-metatracelimit <limit>\n" \
+    "                Specify the limit to the number of trace events stored\n", \
+    QEMU_ARCH_META)
+STEXI
+@item -metatracelimit @var{limit}
+@findex -metatracelimit
+Limit the number of Meta trace events to output before closing the trace file to
+@var{limit} events. The default is 100 million events.
+ETEXI
 
 HXCOMM This is the last statement. Insert new options before this line!
 STEXI

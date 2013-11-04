@@ -47,6 +47,11 @@ envlist_t *envlist;
 const char *cpu_model;
 unsigned long mmap_min_addr;
 #if defined(CONFIG_USE_GUEST_BASE)
+#if defined(__metag__)
+unsigned long guest_base = 0x10005000;
+int have_guest_base = 1;
+unsigned long reserved_va = 0x10000000;
+#else
 unsigned long guest_base;
 int have_guest_base;
 #if (TARGET_LONG_BITS == 32) && (HOST_LONG_BITS == 64)
@@ -60,6 +65,7 @@ int have_guest_base;
 unsigned long reserved_va = 0xf7000000;
 #else
 unsigned long reserved_va;
+#endif
 #endif
 #endif
 
@@ -3005,6 +3011,160 @@ void cpu_loop(CPUS390XState *env)
 
 #endif /* TARGET_S390X */
 
+#ifdef TARGET_META
+
+static int gateway_page_trap(CPUMETAState *env)
+{
+    uint32_t addr, val;
+
+    switch (env->pc[META_PC]) {
+
+    case 0x6ffff000:  /* Get TLS pointer */
+        env->dregs[0][0] = env->tls_value;
+        break;
+
+    case 0x6ffff040: /* cmp xchange */
+    /*
+     *   XXX: This only works between threads, not between processes.
+     *        It's probably possible to implement this with native host
+     *        operations. However things like ldrex/strex are much harder so
+     *        there's not much point trying.
+     */
+
+        start_exclusive();
+
+        addr = env->dregs[1][2]; /* D1Arg3 */
+        /* FIXME: this should SEGV if the access fails */
+        if (get_user_u32(val, addr)) { /* corrupt val if read failed */
+            val = ~env->dregs[1][3];  /* D1Arg1 */
+        }
+        if (val == env->dregs[1][3]) {
+            val = env->dregs[0][3]; /* D0Arg2 */
+            put_user_u32(val, addr);
+            env->dregs[0][0] = 0; /* D0Ret0 */
+        } else {
+            env->dregs[0][0] = 1;
+        }
+
+        end_exclusive();
+
+        break;
+
+    default:
+        return 0;
+
+    }
+
+    /* Jump back to return address */
+    env->pc[META_PC] = env->dregs[1][4]; /* PC <= D1Rtp */
+
+    return 1;
+}
+
+void cpu_loop(CPUMETAState *env)
+{
+    int trapnr, ret;
+    target_siginfo_t info;
+
+    while (1) {
+        cpu_exec_start(env);
+        trapnr = cpu_meta_exec(env);
+        cpu_exec_end(env);
+        switch (trapnr) {
+        case EXCP_INTERRUPT:
+            /* just indicate that signals should be handled asap */
+            break;
+        case EXCP_FAULT_BASE + _META_SIGNUM(NOERROR, SWITCH):
+            {
+                /*
+                 * See syscall_get_nr(), there's no way to find out how we got
+                 * here other than to examine the memory at the PC to see if it
+                 * is a syscall SWITCH instruction.
+                 */
+                abi_ulong instr;
+                get_user_ual(instr, env->pc[META_PC]);
+                if (instr == 0xAF440001) {
+                    ret = do_syscall(env,
+                                     env->dregs[1][0],  /* D1Re0 */
+                                     env->dregs[1][3],  /* D1Ar1 */
+                                     env->dregs[0][3],  /* D0Ar2 */
+                                     env->dregs[1][2],  /* D1Ar3 */
+                                     env->dregs[0][2],  /* D0Ar4 */
+                                     env->dregs[1][1],  /* D1Ar5 */
+                                     env->dregs[0][1],  /* D0Ar6 */
+                                     0, 0);
+                    env->dregs[0][0] = ret; /* D0Re0 */
+                    env->pc[META_PC] += 4;
+                } else {
+                    printf("Unhandled SWITCH instruction : 0x%x\n", instr);
+                    cpu_dump_state(env, stderr, fprintf, 0);
+                    exit(1);
+                }
+            }
+            break;
+
+        case EXCP_FAULT_BASE + META_SIGNUM_IPF:
+            printf("Unhandled instruction page fault\n");
+            cpu_dump_state(env, stderr, fprintf, 0);
+            exit(1);
+        case EXCP_FAULT_BASE + META_SIGNUM_DPF:
+            printf("Unhandled data page fault\n");
+            cpu_dump_state(env, stderr, fprintf, 0);
+            exit(1);
+        case EXCP_DEBUG:
+            {
+                int sig;
+
+                sig = gdb_handlesig(env, TARGET_SIGTRAP);
+                if (sig) {
+                    info.si_signo = sig;
+                    info.si_errno = 0;
+                    info.si_code = TARGET_TRAP_BRKPT;
+                    queue_signal(env, info.si_signo, &info);
+                }
+            }
+            break;
+        case EXCP_FPU:
+            {
+                int fpe = (env->cregs[META_TXDEFR] >> META_TXDEFR_TRIGSTAT_SHIFT);
+
+                info.si_signo = TARGET_SIGFPE;
+                info.si_errno = 0;
+
+                if (fpe & META_DEFR_FPU_INVALID_MASK)
+                    info.si_code = TARGET_FPE_FLTINV;
+                else if (fpe & META_DEFR_FPU_DIVZERO_MASK)
+                    info.si_code = TARGET_FPE_FLTDIV;
+                else if (fpe & META_DEFR_FPU_OVERFLOW_MASK)
+                    info.si_code = TARGET_FPE_FLTOVF;
+                else if (fpe & META_DEFR_FPU_UNDERFLOW_MASK)
+                    info.si_code = TARGET_FPE_FLTUND;
+                else if (fpe & META_DEFR_FPU_INEXACT_MASK)
+                    info.si_code = TARGET_FPE_FLTRES;
+                else
+                    info.si_code = 0;
+
+                info._sifields._sigfault._addr = env->pc[0];
+                queue_signal(env, info.si_signo, &info);
+            }
+            break;
+        case EXCP_GATEWAY_TRAP:
+            if (!gateway_page_trap(env)) {
+                goto error;
+            }
+            break;
+
+        default:
+        error:
+            printf("Unhandled trap: 0x%x\n", trapnr);
+            cpu_dump_state(env, stderr, fprintf, 0);
+            exit(1);
+        }
+        process_pending_signals(env);
+    }
+}
+#endif /* TARGET_META */
+
 THREAD CPUArchState *thread_env;
 
 void task_settid(TaskState *ts)
@@ -3478,6 +3638,8 @@ int main(int argc, char **argv, char **envp)
 #else
         cpu_model = "750";
 #endif
+#elif defined(TARGET_META)
+        cpu_model = "harrier";
 #else
         cpu_model = "any";
 #endif
@@ -3912,6 +4074,25 @@ int main(int argc, char **argv, char **envp)
             }
             env->psw.mask = regs->psw.mask;
             env->psw.addr = regs->psw.addr;
+    }
+#elif defined(TARGET_META)
+    {
+            int i, j;
+            for (i = 0; i < 2; i++) {
+                for (j = 0; j < 16; ++j) {
+                    env->dregs[i][j] = regs->dregs[i][j];
+                }
+                for (j = 0; j < 8; ++j) {
+                    env->aregs[i][j] = regs->aregs[i][j];
+                }
+                env->pc[i] = regs->pc[i];
+            }
+            /* set up priv and unaligned access checking */
+            env->cregs[META_TXPRIVEXT] = 0x00037f10;
+            /* allow access to all DSP RAM */
+            env->dspram_off_and[0] = env->dspram_off_and[1] =
+                (0xf << (env->global->dspram_addr_bits - 4)) |
+                ((1 << (env->global->dspram_addr_bits - 4)) - 1);
     }
 #else
 #error unsupported target CPU

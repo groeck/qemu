@@ -209,6 +209,11 @@ trace-obj-y += trace/control.o
 $(trace-obj-y): $(GENERATED_HEADERS)
 
 ######################################################################
+# metatrace
+
+metatrace-obj-y += metatrace.o
+
+######################################################################
 # smartcard
 
 libcacard-y += libcacard/cac.o libcacard/event.o

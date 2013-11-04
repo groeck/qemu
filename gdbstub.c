@@ -1053,6 +1053,66 @@ static int cpu_gdb_write_register(CPUM68KState *env, uint8_t *mem_buf, int n)
     }
     return 4;
 }
+#elif defined(TARGET_META)
+
+#define NUM_CORE_REGS 159
+
+static int meta_reg_to_unit_idx(int n, MetaUnit *unit, int *idx)
+{
+    static const unsigned int reg_nrs[] = {
+        [META_UNIT_CT] = 32,
+        [META_UNIT_D0] = 32,
+        [META_UNIT_D1] = 32,
+        [META_UNIT_A0] = 16,
+        [META_UNIT_A1] = 16,
+        [META_UNIT_PC] = 2,
+        [META_UNIT_TR] = 8,
+        [META_UNIT_TT] = 5,
+        [META_UNIT_FX] = 16,
+    };
+    int i;
+    for (i = 0; i < ARRAY_SIZE(reg_nrs); ++i) {
+        if (n < reg_nrs[i]) {
+            *unit = i;
+            *idx = n;
+            return 0;
+        }
+        n -= reg_nrs[i];
+    }
+    return 1;
+}
+
+static int cpu_gdb_read_register(CPUArchState *env, uint8_t *mem_buf, int n)
+{
+    MetaUnit unit;
+    int idx;
+    if (meta_reg_to_unit_idx(n, &unit, &idx)) {
+        return 1;
+    }
+
+    GET_REG32(meta_core_intreg_read(env, unit, idx));
+    return 0;
+}
+
+static int cpu_gdb_write_register(CPUArchState *env, uint8_t *mem_buf, int n)
+{
+    MetaUnit unit;
+    int idx;
+    uint32_t tmp;
+
+    if (n >= NUM_CORE_REGS) {
+        return 0;
+    }
+
+    tmp = ldl_p(mem_buf);
+
+    if (meta_reg_to_unit_idx(n, &unit, &idx)) {
+        return 0;
+    }
+
+    meta_core_intreg_write(env, unit, idx, tmp);
+    return 4;
+}
 #elif defined (TARGET_MIPS)
 
 #define NUM_CORE_REGS 73

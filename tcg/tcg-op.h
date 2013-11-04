@@ -2246,6 +2246,21 @@ static inline void tcg_gen_concat32_i64(TCGv_i64 dest, TCGv_i64 low,
     tcg_gen_deposit_i64(dest, low, high, 32, 32);
 }
 
+static inline void tcg_gen_split_i64_i32(TCGv_i32 low, TCGv_i32 high,
+                                         TCGv_i64 src)
+{
+#if TCG_TARGET_REG_BITS == 32
+    tcg_gen_mov_i32(low, TCGV_LOW(src));
+    tcg_gen_mov_i32(high, TCGV_HIGH(src));
+#else
+    TCGv_i64 tmp = tcg_temp_new_i64();
+    tcg_gen_mov_i32(low, MAKE_TCGV_I32(GET_TCGV_I64(src)));
+    tcg_gen_shri_i64(tmp, src, 32);
+    tcg_gen_mov_i32(high, MAKE_TCGV_I32(GET_TCGV_I64(tmp)));
+    tcg_temp_free_i64(tmp);
+#endif
+}
+
 static inline void tcg_gen_movcond_i32(TCGCond cond, TCGv_i32 ret,
                                        TCGv_i32 c1, TCGv_i32 c2,
                                        TCGv_i32 v1, TCGv_i32 v2)

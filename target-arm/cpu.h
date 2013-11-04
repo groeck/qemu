@@ -695,7 +695,7 @@ static inline void cpu_clone_regs(CPUARMState *env, target_ulong newsp)
     (((F) & ARM_TBFLAG_BSWAP_CODE_MASK) >> ARM_TBFLAG_BSWAP_CODE_SHIFT)
 
 static inline void cpu_get_tb_cpu_state(CPUARMState *env, target_ulong *pc,
-                                        target_ulong *cs_base, int *flags)
+                                        target_ulong *cs_base, uint64_t *flags)
 {
     int privmode;
     *pc = env->regs[15];

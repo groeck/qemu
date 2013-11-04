@@ -5453,6 +5453,253 @@ long do_rt_sigreturn(CPUAlphaState *env)
     force_sig(TARGET_SIGSEGV);
 }
 
+#elif defined(TARGET_META)
+
+struct target_sigcontext {
+    struct {
+        target_short flags;
+        target_short savemask;
+        target_int curr_pc;
+
+    struct {
+            target_int u0, u1;
+        } dx[8];
+
+    target_int curr_rpt, curr_bpobits, curr_mode, curr_divtime;
+
+    struct {
+            target_int u0, u1;
+        } ax[2];
+
+        struct {
+            target_llong val;
+            struct {
+                target_int u0, u1;
+            } ax2;
+            target_short dspram_sizes;
+            target_short savemask;
+            struct {
+                target_int u0, u1;
+            } *pext;
+        } ext;
+
+        struct {
+            target_int u0, u1;
+        } ax3;
+    } ctx;
+
+    struct {
+        target_ulong cbflags, cbaddr;
+        struct {
+            target_int u0, u1;
+        } cbdata;
+    } extcb0[5];
+
+    target_ulong oldmask;
+};
+
+struct target_ucontext {
+    target_ulong tuc_flags;
+    struct target_ucontext *tuc_link;
+    target_stack_t tuc_stack;
+    struct target_sigcontext tuc_mcontext;
+    target_sigset_t tuc_sigmask;    /* mask last for extensibility */
+};
+
+struct target_rt_sigframe
+{
+    struct target_siginfo info;
+    struct target_ucontext uc;
+    uint32_t retcode[2];
+};
+
+static inline abi_ulong
+get_sigframe(struct target_sigaction *ka, CPUMETAState *env, size_t frame_size)
+{
+    unsigned long sp;
+
+    /* Default to using normal stack */
+    sp = env->aregs[0][0];
+
+    /* This is the X/Open sanctioned signal stack switching.  */
+    if ((ka->sa_flags & TARGET_SA_ONSTACK) && (sas_ss_flags (sp) == 0)) {
+        sp = target_sigaltstack_used.ss_sp;
+    }
+
+    /* 8-byte align stack */
+    sp = (sp + 7) & ~7;
+
+    return sp;
+}
+
+static int setup_sigcontext(struct target_sigcontext *sc,
+                            CPUMETAState *env, unsigned long mask)
+{
+    int err = 0;
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        err |= __put_user(env->dregs[0][i], &sc->ctx.dx[i].u0);
+        err |= __put_user(env->dregs[1][i], &sc->ctx.dx[i].u1);
+    }
+    for (i = 0; i < 2; i++) {
+        err |= __put_user(env->aregs[0][i], &sc->ctx.ax[i].u0);
+        err |= __put_user(env->aregs[1][i], &sc->ctx.ax[i].u1);
+    }
+
+    sc->ctx.flags = 0;
+    sc->ctx.savemask = 0;
+    sc->ctx.curr_pc = env->pc[0];
+    sc->ctx.curr_rpt = env->cregs[META_TXRPT];
+    sc->ctx.curr_bpobits = env->cregs[META_TXBPOBITS];
+    sc->ctx.curr_mode = env->cregs[META_TXMODE];
+    sc->ctx.curr_divtime = env->cregs[META_TXDIVTIME];
+
+    sc->ctx.ext.val = 0;
+    sc->ctx.ext.ax2.u0 = env->aregs[0][2];
+    sc->ctx.ext.ax2.u1 = env->aregs[1][2];
+    sc->ctx.ext.dspram_sizes = 0;
+    sc->ctx.ext.savemask = 0;
+    sc->ctx.ext.pext = NULL;
+
+    sc->ctx.ax3.u0 = env->aregs[0][3];
+    sc->ctx.ax3.u1 = env->aregs[1][3];
+
+    err |= __put_user(mask, &sc->oldmask);
+
+    return err;
+}
+
+static int restore_sigcontext(CPUMETAState *env,
+                              struct target_sigcontext *sc)
+{
+    int err = 0;
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        err |= __get_user(env->dregs[0][i], &sc->ctx.dx[i].u0);
+        err |= __get_user(env->dregs[1][i], &sc->ctx.dx[i].u1);
+    }
+    for (i = 0; i < 2; i++) {
+        err |= __get_user(env->aregs[0][i], &sc->ctx.ax[i].u0);
+        err |= __get_user(env->aregs[1][i], &sc->ctx.ax[i].u1);
+    }
+
+    env->pc[0] = sc->ctx.curr_pc;
+    env->cregs[META_TXRPT] = sc->ctx.curr_rpt;
+    env->cregs[META_TXBPOBITS] = sc->ctx.curr_bpobits;;
+    env->cregs[META_TXMODE] = sc->ctx.curr_mode;
+    env->cregs[META_TXDIVTIME] = sc->ctx.curr_divtime;
+
+    env->aregs[0][2] = sc->ctx.ext.ax2.u0;
+    env->aregs[1][2] = sc->ctx.ext.ax2.u1;
+
+    env->aregs[0][3] = sc->ctx.ax3.u0;
+    env->aregs[1][3] = sc->ctx.ax3.u1;
+
+    return err;
+}
+
+static void setup_frame(int sig, struct target_sigaction *ka,
+            target_sigset_t *set, CPUArchState *env)
+{
+    fprintf(stderr, "setup_frame: not implemented\n");
+    raise(1);
+}
+
+static void setup_rt_frame(int sig, struct target_sigaction *ka,
+                           target_siginfo_t *info,
+               target_sigset_t *set, CPUArchState *env)
+{
+    struct target_rt_sigframe *frame;
+    abi_ulong frame_addr;
+    int i;
+    int err = 0;
+    int signal;
+
+    frame_addr = get_sigframe(ka, env, sizeof(*frame));
+    if (!lock_user_struct(VERIFY_WRITE, frame, frame_addr, 0))
+    goto give_sigsegv;
+
+    signal = current_exec_domain_sig(sig);
+
+    err |= copy_siginfo_to_user(&frame->info, info);
+
+    /* Create the ucontext.  */
+    err |= __put_user(0, &frame->uc.tuc_flags);
+    err |= __put_user(0, (unsigned long *)&frame->uc.tuc_link);
+    err |= __put_user((unsigned long)target_sigaltstack_used.ss_sp,
+              &frame->uc.tuc_stack.ss_sp);
+    err |= __put_user(sas_ss_flags(env->aregs[0][0]),
+              &frame->uc.tuc_stack.ss_flags);
+    err |= __put_user(target_sigaltstack_used.ss_size,
+              &frame->uc.tuc_stack.ss_size);
+    err |= setup_sigcontext(&frame->uc.tuc_mcontext,
+                env, set->sig[0]);
+    for(i = 0; i < TARGET_NSIG_WORDS; i++) {
+        err |= __put_user(set->sig[i], &frame->uc.tuc_sigmask.sig[i]);
+    }
+
+    /* Generate return code (system call to sigreturn) */
+    err |= __put_user(0x03000004 | (TARGET_NR_rt_sigreturn << 3), &frame->retcode[0]);
+    err |= __put_user(0xaf440001, &frame->retcode[1]);
+
+    if (err)
+        goto give_sigsegv;
+
+    /* Set up registers for signal handler */
+    env->dregs[1][4] = (unsigned long) frame_addr + offsetof(typeof(*frame), retcode); /* D1RtP */
+    env->aregs[0][0] = frame_addr + sizeof(*frame); /* A0StP */
+    env->dregs[1][3] = signal; /* D1Ar1 */
+    env->dregs[0][3] = frame_addr + offsetof(typeof(*frame), info); /* D0Ar2 */
+    env->dregs[1][2] = frame_addr + offsetof(typeof(*frame), uc); /* D1Ar3 */
+    env->pc[0] = (unsigned long) ka->_sa_handler;
+
+    unlock_user_struct(frame, frame_addr, 1);
+    return;
+
+give_sigsegv:
+    unlock_user_struct(frame, frame_addr, 1);
+    force_sig(TARGET_SIGSEGV);
+}
+
+long do_sigreturn(CPUArchState *env)
+{
+    fprintf(stderr, "do_sigreturn: not implemented\n");
+    return -TARGET_ENOSYS;
+}
+
+long do_rt_sigreturn(CPUArchState *env)
+{
+    struct target_rt_sigframe *frame;
+    abi_ulong frame_addr;
+    sigset_t blocked;
+
+#if defined(DEBUG_SIGNAL)
+    fprintf(stderr, "do_rt_sigreturn\n");
+#endif
+    frame_addr = env->aregs[0][0] - sizeof(*frame); /* A0StP */
+    if (!lock_user_struct(VERIFY_READ, frame, frame_addr, 1))
+        goto badframe;
+
+    target_to_host_sigset(&blocked, &frame->uc.tuc_sigmask);
+    sigprocmask(SIG_SETMASK, &blocked, NULL);
+
+    if (restore_sigcontext(env, &frame->uc.tuc_mcontext))
+        goto badframe;
+
+    if (do_sigaltstack(frame_addr +
+               offsetof(struct target_rt_sigframe, uc.tuc_stack),
+               0, get_sp_from_cpustate(env)) == -EFAULT)
+        goto badframe;
+
+    return env->dregs[0][0]; /* D0Re0 */
+
+badframe:
+    force_sig(TARGET_SIGSEGV/*, current*/);
+    return 0;
+}
+
 #else
 
 static void setup_frame(int sig, struct target_sigaction *ka,
@@ -5563,10 +5810,16 @@ void process_pending_signals(CPUArchState *cpu_env)
         }
 #endif
         /* prepare the stack frame of the virtual CPU */
-        if (sa->sa_flags & TARGET_SA_SIGINFO)
+#if defined(TARGET_META)
+        /* META always uses setup_rt_frame */
+        if (1) {
+#else
+        if (sa->sa_flags & TARGET_SA_SIGINFO) {
+#endif
             setup_rt_frame(sig, sa, &q->info, &target_old_set, cpu_env);
-        else
+        } else {
             setup_frame(sig, sa, &target_old_set, cpu_env);
+        }
 	if (sa->sa_flags & TARGET_SA_RESETHAND)
             sa->_sa_handler = TARGET_SIG_DFL;
     }

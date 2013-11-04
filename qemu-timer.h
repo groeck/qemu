@@ -285,6 +285,37 @@ static inline int64_t cpu_get_real_ticks(void)
     return cur - ofs;
 }
 
+#elif defined(__metag__)
+
+static inline int64_t cpu_get_real_ticks(void)
+{
+    /* Running total for tx counters */
+    static uint64_t running_total = 0;
+
+    uint32_t txtactcyc, txidlecyc, txprivext;
+    /* TXTACTCYC and TXIDLECYC are only 24bits */
+    asm volatile("mov %0,txtactcyc\n" : "=da" (txtactcyc));
+    asm volatile("mov %0,txidlecyc\n" : "=da" (txidlecyc));
+    asm volatile("mov %0,txprivext\n" : "=da" (txprivext));
+
+    if (txprivext & 1 << 13) {
+        /* We cannot reset the counters so use a generic ticker.
+         * If we were to contine using tx counters we would get
+         * meaningless numbers due to them wrapping around so quickly.
+         * It is reasonable to assume that txprivext will not change. */
+        return running_total++;
+    }
+
+    running_total += txtactcyc + txidlecyc;
+
+    /* Reset counters in hopes to avoid wrap-arounds */
+    asm volatile("mov txtactcyc,#0x0\n");
+    asm volatile("mov txidlecyc,#0x0\n");
+
+
+    return running_total;
+}
+
 #else
 /* The host CPU doesn't have an easily accessible cycle counter.
    Just return a monotonically increasing value.  This will be

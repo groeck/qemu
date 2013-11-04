@@ -62,6 +62,9 @@
 #ifdef CONFIG_TRACE_SIMPLE
 #include "trace/simple.h"
 #endif
+#ifdef TARGET_META
+#include "metatrace.h"
+#endif
 #include "ui/qemu-spice.h"
 #include "memory.h"
 #include "qmp-commands.h"
@@ -763,6 +766,54 @@ static void do_trace_file(Monitor *mon, const QDict *qdict)
     } else {
         monitor_printf(mon, "unexpected argument \"%s\"\n", op);
         help_cmd(mon, "trace-file");
+    }
+}
+#endif
+
+#ifdef TARGET_META
+static void do_metatrace(Monitor *mon, const QDict *qdict)
+{
+    uint32_t add, rem;
+    const char *items = qdict_get_str(qdict, "items");
+
+    if (!strcmp(items, "none")) {
+        rem = ~0u;
+    } else {
+        if (metatrace_parse_events(items, &add, &rem)) {
+            help_cmd(mon, "metatrace");
+            metatrace_usage((metatrace_usage_printf)monitor_printf, mon);
+            return;
+        }
+    }
+    metatrace_updmask(add, rem);
+}
+
+static void do_metatrace_file(Monitor *mon, const QDict *qdict)
+{
+    const char *op = qdict_get_try_str(qdict, "op");
+    const char *arg = qdict_get_try_str(qdict, "arg");
+
+    if (!strcmp(op, "off")) {
+        metatrace_setfile(NULL);
+    } else if (!strcmp(op, "set")) {
+        if (arg) {
+            metatrace_setfile(arg);
+        }
+    } else {
+        monitor_printf(mon, "unexpected argument \"%s\"\n", op);
+        help_cmd(mon, "trace-file");
+    }
+}
+
+static void do_metatrace_limit(Monitor *mon, const QDict *qdict)
+{
+    int lim = qdict_get_try_int(qdict, "lim", -1);
+
+    if (lim < 0) {
+        monitor_printf(mon, "metatrace limit: %u\n",
+                       metatrace_getlimit());
+    } else {
+        metatrace_setlimit(lim);
     }
 }
 #endif

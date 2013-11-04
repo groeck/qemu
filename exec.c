@@ -36,6 +36,7 @@
 #include "memory.h"
 #include "dma.h"
 #include "exec-memory.h"
+#include "host-utils.h"
 #if defined(CONFIG_USER_ONLY)
 #include <qemu.h>
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
@@ -740,6 +741,9 @@ static TranslationBlock *tb_alloc(target_ulong pc)
     tb = &tbs[nb_tbs++];
     tb->pc = pc;
     tb->cflags = 0;
+#ifdef TARGET_META
+    tb->tplt_instantiations = 0;
+#endif
     return tb;
 }
 
@@ -1042,7 +1046,7 @@ static void build_page_bitmap(PageDesc *p)
 
 TranslationBlock *tb_gen_code(CPUArchState *env,
                               target_ulong pc, target_ulong cs_base,
-                              int flags, int cflags)
+                              uint64_t flags, int cflags)
 {
     TranslationBlock *tb;
     uint8_t *tc_ptr;
@@ -1117,7 +1121,7 @@ void tb_invalidate_phys_page_range(tb_page_addr_t start, tb_page_addr_t end,
     int current_tb_modified = 0;
     target_ulong current_pc = 0;
     target_ulong current_cs_base = 0;
-    int current_flags = 0;
+    uint64_t current_flags = 0;
 #endif /* TARGET_HAS_PRECISE_SMC */
 
     p = page_find(start >> TARGET_PAGE_BITS);
@@ -1249,7 +1253,7 @@ static void tb_invalidate_phys_page(tb_page_addr_t addr,
     int current_tb_modified = 0;
     target_ulong current_pc = 0;
     target_ulong current_cs_base = 0;
-    int current_flags = 0;
+    uint64_t current_flags = 0;
 #endif
 
     addr &= TARGET_PAGE_MASK;
@@ -1491,6 +1495,22 @@ static void breakpoint_invalidate(CPUArchState *env, target_ulong pc)
 {
     tb_invalidate_phys_page_range(pc, pc + 1, 0);
 }
+
+/* Invalidate some addresses A where A & ~mask == pc & ~mask
+ * Assume the range of addresses is continuous, so mask has all 1s lower
+ * significance than all 0s. */
+static void breakpoint_invalidate_range(CPUArchState *env,
+                                        target_ulong pc, target_ulong mask)
+{
+    target_ulong end = (pc | mask) + 1;
+    if (mask & TARGET_PAGE_MASK) {
+        for (; pc < end; pc += TARGET_PAGE_SIZE) {
+            tb_invalidate_phys_page_range(pc, pc + TARGET_PAGE_SIZE, 0);
+        }
+    } else {
+        tb_invalidate_phys_page_range(pc, end, 0);
+    }
+}
 #else
 void tb_invalidate_phys_addr(hwaddr addr)
 {
@@ -1512,7 +1532,62 @@ static void breakpoint_invalidate(CPUArchState *env, target_ulong pc)
     tb_invalidate_phys_addr(cpu_get_phys_page_debug(env, pc) |
             (pc & ~TARGET_PAGE_MASK));
 }
+
+/* Invalidate some addresses A where A & ~mask == pc & ~mask
+ * Assume the range of addresses is continuous, so mask has all 1s lower
+ * significance than all 0s. */
+static void breakpoint_invalidate_range(CPUArchState *env,
+                                        target_ulong pc, target_ulong mask)
+{
+    target_ulong end = pc | mask;
+    for (; pc < end; pc += TARGET_PAGE_SIZE) {
+        hwaddr addr;
+        target_ulong pd;
+        ram_addr_t ramstart, ramend;
+        MemoryRegionSection *p;
+
+        addr = cpu_get_phys_page_debug(env, pc);
+        p = phys_page_find(address_space_memory.dispatch, addr >> TARGET_PAGE_BITS);
+        if (!p) {
+            pd = io_mem_unassigned.ram_addr;
+        } else {
+            pd = p->offset_within_address_space;
+        }
+        ramstart = (pd & TARGET_PAGE_MASK) | (pc & ~TARGET_PAGE_MASK);
+        ramend = (pd & TARGET_PAGE_MASK) | (end & ~TARGET_PAGE_MASK);
+        tb_invalidate_phys_page_range(ramstart, ramend + 1, 0);
+    }
+}
 #endif
+
+/* Invalidate any address A where A & ~mask == pc & ~mask */
+static void breakpoint_invalidate_mask(CPUArchState *env,
+                                       target_ulong pc, target_ulong mask)
+{
+    /* divide and conquer if bits in mask */
+    if (mask) {
+        target_ulong order;
+        target_ulong mask2;
+#if TARGET_LONG_BITS == 32
+        order = 31 - clz32(mask);
+#elif TARGET_LONG_BITS == 64
+        order = 63 - clz64(mask);
+#endif
+        order = (target_ulong)1 << order;
+        /* if all the remaining bits are set, it's a continuous range, so no
+         * need to divide any further.
+         */
+        mask2 = mask & ~order;
+        if (mask2 != order - 1) {
+            breakpoint_invalidate_mask(env, pc, mask2);
+            breakpoint_invalidate_mask(env, pc |  order, mask2);
+            return;
+        }
+    }
+
+    breakpoint_invalidate_range(env, pc, mask);
+}
+
 #endif /* TARGET_HAS_ICE */
 
 #if defined(CONFIG_USER_ONLY)
@@ -1600,15 +1675,17 @@ void cpu_watchpoint_remove_all(CPUArchState *env, int mask)
 #endif
 
 /* Add a breakpoint.  */
-int cpu_breakpoint_insert(CPUArchState *env, target_ulong pc, int flags,
-                          CPUBreakpoint **breakpoint)
+int cpu_breakpoint_insert_mask(CPUArchState *env, target_ulong pc,
+                               target_ulong mask, int flags,
+                               CPUBreakpoint **breakpoint)
 {
 #if defined(TARGET_HAS_ICE)
     CPUBreakpoint *bp;
 
     bp = g_malloc(sizeof(*bp));
 
-    bp->pc = pc;
+    bp->pc = pc & ~mask;
+    bp->mask = mask;
     bp->flags = flags;
 
     /* keep all GDB-injected breakpoints in front */
@@ -1617,7 +1694,11 @@ int cpu_breakpoint_insert(CPUArchState *env, target_ulong pc, int flags,
     else
         QTAILQ_INSERT_TAIL(&env->breakpoints, bp, entry);
 
-    breakpoint_invalidate(env, pc);
+    if (mask) {
+        breakpoint_invalidate_mask(env, pc, mask);
+    } else {
+        breakpoint_invalidate(env, pc);
+    }
 
     if (breakpoint)
         *breakpoint = bp;
@@ -1651,7 +1732,11 @@ void cpu_breakpoint_remove_by_ref(CPUArchState *env, CPUBreakpoint *breakpoint)
 #if defined(TARGET_HAS_ICE)
     QTAILQ_REMOVE(&env->breakpoints, breakpoint, entry);
 
-    breakpoint_invalidate(env, breakpoint->pc);
+    if (breakpoint->mask) {
+        breakpoint_invalidate_mask(env, breakpoint->pc, breakpoint->mask);
+    } else {
+        breakpoint_invalidate(env, breakpoint->pc);
+    }
 
     g_free(breakpoint);
 #endif
@@ -2955,7 +3040,7 @@ static void check_watchpoint(int offset, int len_mask, int flags)
     TranslationBlock *tb;
     target_ulong vaddr;
     CPUWatchpoint *wp;
-    int cpu_flags;
+    uint64_t cpu_flags;
 
     if (env->watchpoint_hit) {
         /* We re-entered the check after replacing the TB. Now raise

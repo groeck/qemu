@@ -356,6 +356,8 @@ elif check_define __arm__ ; then
   cpu="arm"
 elif check_define __hppa__ ; then
   cpu="hppa"
+elif check_define __metag__ ; then
+  cpu="metag"
 else
   cpu=`uname -m`
 fi
@@ -378,6 +380,9 @@ case "$cpu" in
   ;;
   hppa|parisc|parisc64)
     cpu="hppa"
+  ;;
+  metag)
+    cpu="metag"
   ;;
   mips*)
     cpu="mips"
@@ -918,6 +923,7 @@ arm-softmmu \
 cris-softmmu \
 lm32-softmmu \
 m68k-softmmu \
+meta-softmmu \
 microblaze-softmmu \
 microblazeel-softmmu \
 mips-softmmu \
@@ -948,6 +954,7 @@ arm-linux-user \
 armeb-linux-user \
 cris-linux-user \
 m68k-linux-user \
+meta-linux-user \
 microblaze-linux-user \
 microblazeel-linux-user \
 mips-linux-user \
@@ -2737,6 +2744,14 @@ if test "$darwin" != "yes" -a "$mingw32" != "yes" -a "$solaris" != yes -a \
 fi
 
 ##########################################
+# Cross compiling for metag-linux
+# requires libm and librt from uclibc
+
+if test "$cpu" = "metag" ; then
+  LIBS="-lm -lrt $LIBS"
+fi
+
+##########################################
 # spice probe
 if test "$spice" != "no" ; then
   cat > $TMPC << EOF
@@ -3809,6 +3824,11 @@ case "$target_arch2" in
     target_int_alignment=2
     target_long_alignment=2
     target_llong_alignment=2
+  ;;
+  meta)
+    target_nptl="yes"
+    target_phys_bits=32
+    echo "CONFIG_THREAD=y" >> $config_host_mak
   ;;
   microblaze|microblazeel)
     TARGET_ARCH=microblaze

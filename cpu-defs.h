@@ -140,6 +140,7 @@ struct qemu_work_item;
 
 typedef struct CPUBreakpoint {
     target_ulong pc;
+    target_ulong mask; /* bits of pc not to compare */
     int flags; /* BP_* */
     QTAILQ_ENTRY(CPUBreakpoint) entry;
 } CPUBreakpoint;

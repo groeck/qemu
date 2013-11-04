@@ -38,6 +38,17 @@
 #define IPCOP_shmctl		24
 
 /*
+ * It needs to be known if the host's stack grows up or down
+ * so that syscalls such as clone() know whether to provide the
+ * top or bottom address when passing a new stack ptr
+ */
+#if defined(__metag__) || defined(__hppa__)
+#define STACK_START(offs) 0
+#else
+#define STACK_START(offs) offs
+#endif
+
+/*
  * The following is for compatibility across the various Linux
  * platforms.  The i386 ioctl numbering scheme doesn't really enforce
  * a type field.  De facto, however, the top 8 bits of the lower 16
@@ -59,7 +70,7 @@
 
 #if defined(TARGET_I386) || defined(TARGET_ARM) || defined(TARGET_SH4) \
     || defined(TARGET_M68K) || defined(TARGET_CRIS) || defined(TARGET_UNICORE32) \
-    || defined(TARGET_S390X) || defined(TARGET_OPENRISC)
+    || defined(TARGET_S390X) || defined(TARGET_OPENRISC) || defined(TARGET_META)
 
 #define TARGET_IOC_SIZEBITS	14
 #define TARGET_IOC_DIRBITS	2
@@ -323,7 +334,7 @@ int do_sigaction(int sig, const struct target_sigaction *act,
     || defined(TARGET_PPC) || defined(TARGET_MIPS) || defined(TARGET_SH4) \
     || defined(TARGET_M68K) || defined(TARGET_ALPHA) || defined(TARGET_CRIS) \
     || defined(TARGET_MICROBLAZE) || defined(TARGET_UNICORE32) \
-    || defined(TARGET_S390X) || defined(TARGET_OPENRISC)
+    || defined(TARGET_S390X) || defined(TARGET_OPENRISC) || defined(TARGET_META)
 
 #if defined(TARGET_SPARC)
 #define TARGET_SA_NOCLDSTOP    8u
@@ -1856,6 +1867,53 @@ struct target_stat {
 
     abi_long __unused[3];
 };
+
+#elif defined(TARGET_META)
+struct target_stat {
+    abi_ulong    st_dev;
+    abi_ulong    st_ino;
+    unsigned int st_mode;
+    abi_ulong    st_nlink;
+    unsigned int st_uid;
+    unsigned int st_gid;
+    abi_ulong    st_rdev;
+    abi_long     st_size;
+    abi_ulong    st_blksize;
+    abi_ulong    st_blocks;
+    abi_ulong    target_st_atime;
+    abi_ulong    target_st_atime_nsec;
+    abi_ulong    target_st_mtime;
+    abi_ulong    target_st_mtime_nsec;
+    abi_ulong    target_st_ctime;
+    abi_ulong    target_st_ctime_nsec;
+    abi_ulong    __unused4;
+    abi_ulong    __unused5;
+};
+
+/* This matches struct stat64 in glibc2.1. Only used for 32 bit. */
+struct target_stat64 {
+    uint64_t        st_dev;         /* Device.  */
+    uint64_t        st_ino;         /* File serial number.  */
+    unsigned int    st_mode;        /* File mode.  */
+    unsigned int    st_nlink;       /* Link count.  */
+    unsigned int    st_uid;         /* User ID of the file's owner.  */
+    unsigned int    st_gid;         /* Group ID of the file's group. */
+    uint64_t        st_rdev;        /* Device number, if device.  */
+    uint64_t        __pad0;
+    int64_t         st_size;        /* Size of file, in bytes.  */
+    int             st_blksize;     /* Optimal block size for I/O.  */
+    int             __pad1;
+    int64_t         st_blocks;      /* Number 512-byte blocks allocated. */
+    int             target_st_atime;       /* Time of last access.  */
+    unsigned int    target_st_atime_nsec;
+    int             target_st_mtime;       /* Time of last modification.  */
+    unsigned int    target_st_mtime_nsec;
+    int             target_st_ctime;       /* Time of last status change.  */
+    unsigned int    target_st_ctime_nsec;
+    unsigned int    __unused4;
+    unsigned int    __unused5;
+} __attribute__((packed));
+
 #else
 #error unsupported CPU
 #endif

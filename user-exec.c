@@ -618,6 +618,22 @@ int cpu_signal_handler(int host_signum, void *pinfo,
                              is_write, &uc->uc_sigmask, puc);
 }
 
+#elif defined(__metag__)
+
+#define TXCATCH0_READ_BIT 0x00000100
+
+int cpu_signal_handler(int host_signum, void *pinfo,
+                       void *puc)
+{
+    siginfo_t *info = pinfo;
+    struct ucontext *uc = puc;
+    unsigned long pc = uc->uc_mcontext.regs.pc;
+    int is_write = !(uc->uc_mcontext.cb.flags & TXCATCH0_READ_BIT);
+
+    return handle_cpu_signal(pc, (unsigned long)info->si_addr,
+                             is_write, &uc->uc_sigmask, puc);
+}
+
 #else
 
 #error host CPU specific signal handler needed

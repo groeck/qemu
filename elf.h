@@ -110,6 +110,8 @@ typedef int64_t  Elf64_Sxword;
 
 #define EM_UNICORE32    110     /* UniCore32 */
 
+#define EM_METAG        174     /* Imagination Technologies META processor */
+
 /*
  * This is an interim value that we will use until the committee comes
  * up with a final number.
@@ -995,6 +997,54 @@ typedef struct {
 #define R_IA64_DTPREL64MSB	0xb6	/* @dtprel(sym + add), data8 MSB */
 #define R_IA64_DTPREL64LSB	0xb7	/* @dtprel(sym + add), data8 LSB */
 #define R_IA64_LTOFF_DTPREL22	0xba	/* @ltoff(@dtprel(s+a)), imm22 */
+
+/* metag specific declarations */
+
+/* META relocations */
+#define R_METAG_HIADDR16                 0
+#define R_METAG_LOADDR16                 1
+#define R_METAG_ADDR32                   2
+#define R_METAG_NONE                     3
+#define R_METAG_RELBRANCH                4
+#define R_METAG_GETSETOFF                5
+
+/* Backward compatability */
+#define R_METAG_REG32OP1                 6
+#define R_METAG_REG32OP2                 7
+#define R_METAG_REG32OP3                 8
+#define R_METAG_REG16OP1                 9
+#define R_METAG_REG16OP2                10
+#define R_METAG_REG16OP3                11
+#define R_METAG_REG32OP4                12
+
+#define R_METAG_HIOG                    13
+#define R_METAG_LOOG                    14
+
+/* GNU */
+#define R_METAG_GNU_VTINHERIT           30
+#define R_METAG_GNU_VTENTRY             31
+
+/* PIC relocations */
+#define R_METAG_HI16_GOTOFF             32
+#define R_METAG_LO16_GOTOFF             33
+#define R_METAG_GETSET_GOTOFF           34
+#define R_METAG_GETSET_GOT              35
+#define R_METAG_HI16_GOTPC              36
+#define R_METAG_LO16_GOTPC              37
+#define R_METAG_HI16_PLT                38
+#define R_METAG_LO16_PLT                39
+#define R_METAG_RELBRANCH_PLT           40
+#define R_METAG_GOTOFF                  41
+#define R_METAG_PLT                     42
+#define R_METAG_COPY                    43
+#define R_METAG_JMP_SLOT                44
+#define R_METAG_RELATIVE                45
+#define R_METAG_GLOB_DAT                46
+
+/* TLS relocations */
+#define R_METAG_TLS_TPOFF               56
+#define R_METAG_TLS_DTPMOD              57
+#define R_METAG_TLS_DTPOFF              58
 
 typedef struct elf32_rel {
   Elf32_Addr	r_offset;

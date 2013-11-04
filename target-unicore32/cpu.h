@@ -167,7 +167,7 @@ static inline void cpu_pc_from_tb(CPUUniCore32State *env, TranslationBlock *tb)
 }
 
 static inline void cpu_get_tb_cpu_state(CPUUniCore32State *env, target_ulong *pc,
-                                        target_ulong *cs_base, int *flags)
+                                        target_ulong *cs_base, uint64_t *flags)
 {
     *pc = env->regs[31];
     *cs_base = 0;

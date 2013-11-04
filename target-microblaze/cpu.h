@@ -361,7 +361,7 @@ static inline target_ulong cpu_get_pc(CPUMBState *env)
 }
 
 static inline void cpu_get_tb_cpu_state(CPUMBState *env, target_ulong *pc,
-                                        target_ulong *cs_base, int *flags)
+                                        target_ulong *cs_base, uint64_t *flags)
 {
     *pc = env->sregs[SR_PC];
     *cs_base = 0;

@@ -162,6 +162,7 @@ int main(int argc, char **argv)
 
 #include "trace.h"
 #include "trace/control.h"
+#include "metatrace.h"
 #include "qemu-queue.h"
 #include "cpus.h"
 #include "arch_init.h"
@@ -267,6 +268,12 @@ int xen_allowed = 0;
 uint32_t xen_domid;
 enum xen_mode xen_mode = XEN_EMULATE;
 static int tcg_tb_size;
+
+const char *sap_comms;
+const char *ldr_filename;
+unsigned int ldr_pagesize;
+int boot_thread = -1;
+int sim_magic;
 
 static int default_serial = 1;
 static int default_parallel = 1;
@@ -1151,6 +1158,23 @@ static void smp_parse(const char *optarg)
     smp_threads = threads > 0 ? threads : 1;
     if (max_cpus == 0)
         max_cpus = smp_cpus;
+}
+
+static void ldr_parse(const char *optarg)
+{
+    char *endptr;
+    char option[128];
+
+    endptr = strchr(optarg, ',');
+    if (!endptr) {
+        ldr_filename = optarg;
+    } else {
+        ldr_filename = strndup(optarg, endptr - optarg);
+        ++endptr;
+        if (get_param_value(option, sizeof(option), "pagesize", endptr) != 0) {
+            ldr_pagesize = strtoull(option, NULL, 10);
+        }
+    }
 }
 
 /***********************************************************/
@@ -2558,6 +2582,9 @@ int main(int argc, char **argv, char **envp)
     };
     const char *trace_events = NULL;
     const char *trace_file = NULL;
+    const char *metatrace_events = NULL;
+    const char *metatrace_file = NULL;
+    unsigned int metatrace_limit = 100e6;
 
     atexit(qemu_run_exit_notifiers);
     error_set_progname(argv[0]);
@@ -2789,6 +2816,9 @@ int main(int argc, char **argv, char **envp)
                     exit(1);
                 }
                 break;
+            case QEMU_OPTION_ldr:
+                ldr_parse(optarg);
+                break;
             case QEMU_OPTION_kernel:
                 qemu_opts_set(qemu_find_opts("machine"), 0, "kernel", optarg);
                 break;
@@ -2801,6 +2831,14 @@ int main(int argc, char **argv, char **envp)
             case QEMU_OPTION_dtb:
                 qemu_opts_set(qemu_find_opts("machine"), 0, "dtb", optarg);
                 break;
+	    case QEMU_OPTION_bootthread:
+                {
+                    char *r;
+                    boot_thread = strtol(optarg, &r, 0);
+                    if (r == optarg)
+                        printf("Bad argument to bootthread\n");
+                    break;
+                }
             case QEMU_OPTION_cdrom:
                 drive_add(IF_DEFAULT, 2, optarg, CDROM_OPTS);
                 break;
@@ -2957,6 +2995,12 @@ int main(int argc, char **argv, char **envp)
                 break;
             case QEMU_OPTION_gdb:
                 add_device_config(DEV_GDB, optarg);
+                break;
+            case QEMU_OPTION_sap:
+                sap_comms = optarg;
+                break;
+            case QEMU_OPTION_simmagic:
+                sim_magic = 1;
                 break;
             case QEMU_OPTION_L:
                 data_dir = optarg;
@@ -3455,6 +3499,15 @@ int main(int argc, char **argv, char **envp)
                 trace_file = qemu_opt_get(opts, "file");
                 break;
             }
+            case QEMU_OPTION_metatrace:
+                metatrace_events = optarg;
+                break;
+            case QEMU_OPTION_metatracefile:
+                metatrace_file = optarg;
+                break;
+            case QEMU_OPTION_metatracelimit:
+                metatrace_limit = atoi(optarg);
+                break;
             case QEMU_OPTION_readconfig:
                 {
                     int ret = qemu_read_config_file(optarg);
@@ -3586,6 +3639,24 @@ int main(int argc, char **argv, char **envp)
 
     if (!trace_backend_init(trace_events, trace_file)) {
         exit(1);
+    }
+
+    /* Meta Tracing */
+    if (!metatrace_file) {
+        metatrace_file = "qemu.trace";
+    }
+    metatrace_setlimit(metatrace_limit);
+    if (metatrace_setfile(metatrace_file)) {
+        fprintf(stderr, "could not open metatrace file\n");
+        exit(1);
+    }
+    if (metatrace_events) {
+        uint32_t add = 0;
+        if (metatrace_parse_events(metatrace_events, &add, NULL)) {
+            metatrace_usage((metatrace_usage_printf)fprintf, stderr);
+            exit(1);
+        }
+        metatrace_setmask(add);
     }
 
     /* If no data_dir is specified then try to find it relative to the

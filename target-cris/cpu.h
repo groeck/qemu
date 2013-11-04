@@ -273,7 +273,7 @@ static inline void cpu_set_tls(CPUCRISState *env, target_ulong newtls)
 #include "cpu-all.h"
 
 static inline void cpu_get_tb_cpu_state(CPUCRISState *env, target_ulong *pc,
-                                        target_ulong *cs_base, int *flags)
+                                        target_ulong *cs_base, uint64_t *flags)
 {
     *pc = env->pc;
     *cs_base = 0;

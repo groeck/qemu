@@ -1,0 +1,28 @@
+# META core
+obj-y = cpu.o
+obj-y += cpu.o
+obj-y += decode.o
+obj-y += helper.o
+obj-y += log.o
+obj-y += op_helper.o
+obj-y += translate.o
+obj-$(CONFIG_SOFTMMU) += core_registers.o
+obj-$(CONFIG_SOFTMMU) += triggers.o
+
+# Simulator Access Protocol (debug)
+ifdef CONFIG_SOFTMMU
+obj-y += dasim.o
+obj-y += comms.o
+obj-y += comms_shared.o
+obj-y += comms_socket.o
+obj-y += sap.o
+ifdef CONFIG_LINUX
+obj-y += comms_shared_linux.o
+endif
+ifdef CONFIG_WIN32
+obj-y += comms_shared_win32.o
+endif
+endif # CONFIG_SOFTMMU
+
+# Trace data output
+obj-y += trace_format.o

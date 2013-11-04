@@ -447,8 +447,14 @@ void cpu_exit(CPUArchState *s);
 #define BP_GDB                0x10
 #define BP_CPU                0x20
 
-int cpu_breakpoint_insert(CPUArchState *env, target_ulong pc, int flags,
-                          CPUBreakpoint **breakpoint);
+int cpu_breakpoint_insert_mask(CPUArchState *env, target_ulong pc,
+                               target_ulong mask, int flags,
+                               CPUBreakpoint **breakpoint);
+static inline int cpu_breakpoint_insert(CPUArchState *env, target_ulong pc,
+                                        int flags, CPUBreakpoint **breakpoint)
+{
+    return cpu_breakpoint_insert_mask(env, pc, 0, flags, breakpoint);
+}
 int cpu_breakpoint_remove(CPUArchState *env, target_ulong pc, int flags);
 void cpu_breakpoint_remove_by_ref(CPUArchState *env, CPUBreakpoint *breakpoint);
 void cpu_breakpoint_remove_all(CPUArchState *env, int mask);

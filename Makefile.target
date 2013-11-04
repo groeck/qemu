@@ -151,6 +151,8 @@ nested-vars += obj-y
 # This resolves all nested paths, so it must come last
 include $(SRC_PATH)/Makefile.objs
 
+obj-y += $(metatrace-obj-y)
+
 all-obj-y = $(obj-y)
 all-obj-y += $(addprefix ../, $(universal-obj-y))
 

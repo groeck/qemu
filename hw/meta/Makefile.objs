@@ -1,0 +1,45 @@
+obj-y += meta_pic.o
+obj-y += meta_boot.o
+obj-y += ldr.o
+
+# Switch handling
+obj-y += meta_da.o
+obj-$(CONFIG_POSIX) += meta_dafs.o
+obj-y += meta_dalogf.o
+obj-y += meta_damisc.o
+obj-y += meta_daunexp.o
+obj-y += meta_switch.o
+
+# ImgTec blocks
+# Pixel Display Pipeline (PDP)
+obj-y += pdp.o
+obj-y += vga.o
+
+# SoCs
+# Frontier Chorus2
+obj-y += chorus2.o
+obj-y += soc_dma.o
+obj-y += chorus2_dmac.o
+obj-y += chorus2_spi.o
+# Toumaz Xenif (Comet)
+obj-y += comet.o
+obj-y += img_mdc.o
+obj-y += img_scb.o
+obj-y += comet_spim.o
+obj-y += comet_pdc.o
+obj-y += comet_pdp.o
+obj-y += dw_mmc.o
+obj-y += sd.o
+obj-y += dw_otg.o
+obj-y += dw_serial.o
+
+# Boards
+# METAmorph (01DG)
+obj-y += 01dg.o
+obj-y += dataflash.o
+# Comet METAmorph (01SP)
+obj-y += 01sp.o
+obj-y += qt5480.o
+obj-y += sii9022a.o
+
+obj-y := $(addprefix ../,$(obj-y))

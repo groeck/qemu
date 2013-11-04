@@ -140,7 +140,7 @@ static inline TranslationBlock *tb_find_fast(CPUArchState *env)
 {
     TranslationBlock *tb;
     target_ulong cs_base, pc;
-    int flags;
+    uint64_t flags;
 
     /* we record a subset of the CPU state. It will
        always be the same before a given translated block
@@ -225,6 +225,7 @@ int cpu_exec(CPUArchState *env)
 #elif defined(TARGET_CRIS)
 #elif defined(TARGET_S390X)
 #elif defined(TARGET_XTENSA)
+#elif defined(TARGET_META)
     /* XXXXX */
 #else
 #error unsupported target CPU
@@ -275,7 +276,8 @@ int cpu_exec(CPUArchState *env)
                     }
 #if defined(TARGET_ARM) || defined(TARGET_SPARC) || defined(TARGET_MIPS) || \
     defined(TARGET_PPC) || defined(TARGET_ALPHA) || defined(TARGET_CRIS) || \
-    defined(TARGET_MICROBLAZE) || defined(TARGET_LM32) || defined(TARGET_UNICORE32)
+    defined(TARGET_MICROBLAZE) || defined(TARGET_META) || \
+    defined(TARGET_LM32) || defined(TARGET_UNICORE32)
                     if (interrupt_request & CPU_INTERRUPT_HALT) {
                         env->interrupt_request &= ~CPU_INTERRUPT_HALT;
                         env->halted = 1;
@@ -529,6 +531,11 @@ int cpu_exec(CPUArchState *env)
                         do_interrupt(env);
                         next_tb = 0;
                     }
+#elif defined(TARGET_META)
+                    if (interrupt_request & CPU_INTERRUPT_HARD) {
+                        do_interrupt(env);
+                        next_tb = 0;
+                    }
 #endif
                    /* Don't use the cached interrupt_request value,
                       do_interrupt may have updated the EXITTB flag. */
@@ -660,6 +667,7 @@ int cpu_exec(CPUArchState *env)
 #elif defined(TARGET_CRIS)
 #elif defined(TARGET_S390X)
 #elif defined(TARGET_XTENSA)
+#elif defined(TARGET_META)
     /* XXXXX */
 #else
 #error unsupported target CPU

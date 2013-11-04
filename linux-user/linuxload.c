@@ -98,6 +98,8 @@ abi_ulong loader_build_argptr(int envc, int argc, abi_ulong sp,
     envp = sp;
     sp -= (argc + 1) * n;
     argv = sp;
+    ts->info->argv_start = argv;
+
     if (push_ptr) {
         /* FIXME - handle put_user() failures */
         sp -= n;
@@ -137,7 +139,11 @@ int loader_exec(const char * filename, char ** argv, char ** envp,
     int retval;
     int i;
 
+#if defined(TARGET_STACK_GROWS_UP)
+    bprm->p = 0;
+#else
     bprm->p = TARGET_PAGE_SIZE*MAX_ARG_PAGES-sizeof(unsigned int);
+#endif
     memset(bprm->page, 0, sizeof(bprm->page));
     retval = open(filename, O_RDONLY);
     if (retval < 0) {

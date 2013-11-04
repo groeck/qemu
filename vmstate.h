@@ -141,7 +141,15 @@ extern const VMStateInfo vmstate_info_buffer;
 extern const VMStateInfo vmstate_info_unused_buffer;
 extern const VMStateInfo vmstate_info_bitmap;
 
+#if (__GNUC__ > 4 || \
+    (__GNUC__ == 4 && (__GNUC_MINOR__ > 2 || \
+                      (__GNUC_MINOR__ == 2 && \
+                       __GNUC_PATCHLEVEL__ > 4))))
 #define type_check_array(t1,t2,n) ((t1(*)[n])0 - (t2*)0)
+#else
+/* TODO implement correctly for older compilers */
+#define type_check_array(t1,t2,n) (0)
+#endif
 #define type_check_pointer(t1,t2) ((t1**)0 - (t2*)0)
 
 #define vmstate_offset_value(_state, _field, _type)                  \

@@ -98,18 +98,25 @@ static TCGRegSet tcg_target_call_clobber_regs;
 
 static inline void tcg_out8(TCGContext *s, uint8_t v)
 {
-    *s->code_ptr++ = v;
+    if (likely(!s->searching)) {
+        *s->code_ptr = v;
+    }
+    s->code_ptr++;
 }
 
 static inline void tcg_out16(TCGContext *s, uint16_t v)
 {
-    *(uint16_t *)s->code_ptr = v;
+    if (likely(!s->searching)) {
+        *(uint16_t *)s->code_ptr = v;
+    }
     s->code_ptr += 2;
 }
 
 static inline void tcg_out32(TCGContext *s, uint32_t v)
 {
-    *(uint32_t *)s->code_ptr = v;
+    if (likely(!s->searching)) {
+        *(uint32_t *)s->code_ptr = v;
+    }
     s->code_ptr += 4;
 }
 
@@ -676,7 +683,7 @@ void tcg_gen_callN(TCGContext *s, TCGv_ptr func, unsigned int flags,
 	       reverse the order compared to how we would normally
 	       treat either big or little-endian.  For those arguments
 	       that will wind up in registers, this still works for
-	       HPPA (the only current STACK_GROWSUP target) since the
+	       HPPA and Meta (STACK_GROWSUP targets) since the
 	       argument registers are *also* allocated in decreasing
 	       order.  If another such target is added, this logic may
 	       have to get more complicated to differentiate between
@@ -2204,6 +2211,7 @@ static inline int tcg_gen_code_common(TCGContext *s, uint8_t *gen_code_buf,
     int op_index;
     const TCGOpDef *def;
     const TCGArg *args;
+    s->searching = unlikely(search_pc > -1) ? 1 : 0;
 
 #ifdef DEBUG_DISAS
     if (unlikely(qemu_loglevel_mask(CPU_LOG_TB_OP))) {

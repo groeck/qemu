@@ -667,7 +667,7 @@ hwaddr cpu_mips_translate_address (CPUMIPSState *env, target_ulong address,
 #endif
 
 static inline void cpu_get_tb_cpu_state(CPUMIPSState *env, target_ulong *pc,
-                                        target_ulong *cs_base, int *flags)
+                                        target_ulong *cs_base, uint64_t *flags)
 {
     *pc = env->active_tc.PC;
     *cs_base = 0;

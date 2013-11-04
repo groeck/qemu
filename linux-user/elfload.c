@@ -1012,6 +1012,37 @@ static inline void init_thread(struct target_pt_regs *regs, struct image_info *i
 
 #endif /* TARGET_S390X */
 
+#ifdef TARGET_META
+
+#define ELF_START_MMAP (0x08000000)
+
+#define elf_check_arch(x) ((x) == ELF_ARCH)
+
+#define ELF_CLASS       ELFCLASS32
+#define ELF_ARCH        EM_METAG
+
+static inline void init_thread(struct target_pt_regs *regs,
+                               struct image_info *infop)
+{
+    abi_long stack = infop->start_stack;
+    abi_long argc, argv, envp;
+
+    regs->META_A0StP = stack;
+    regs->META_pc = infop->entry & -4;
+
+    /* FIXME - what to do for failure of get_user()? */
+    argv = infop->argv_start;
+    get_user_ual(argc, argv - 4);
+    envp = argv + 4*(argc + 1);
+
+    regs->META_D1Ar1 = argc;
+    regs->META_D0Ar2 = argv;
+    regs->META_D1Ar3 = envp;
+    regs->META_D0Ar4 = 0;
+}
+
+#endif /* TARGET_META */
+
 #ifndef ELF_PLATFORM
 #define ELF_PLATFORM (NULL)
 #endif
@@ -1164,12 +1195,17 @@ static abi_ulong copy_elf_strings(int argc,char ** argv, void **page,
 {
     char *tmp, *tmp1, *pag = NULL;
     int len, offset = 0;
-
+#if defined(TARGET_STACK_GROWS_UP)
+    int i;
+    for (i = 0; i < argc; ++i) {
+        tmp = argv[i];
+#else
     if (!p) {
         return 0;       /* bullet-proofing */
     }
     while (argc-- > 0) {
         tmp = argv[argc];
+#endif
         if (!tmp) {
             fprintf(stderr, "VFS: argc is wrong");
             exit(-1);
@@ -1177,12 +1213,18 @@ static abi_ulong copy_elf_strings(int argc,char ** argv, void **page,
         tmp1 = tmp;
         while (*tmp++);
         len = tmp - tmp1;
+#if defined(TARGET_STACK_GROWS_UP)
+        /* FIXME cannot check for overflow :( */
+        while (tmp1 < tmp) {
+            if (offset == 0 || offset == TARGET_PAGE_SIZE) {
+#else
         if (p < len) {  /* this shouldn't happen - 128kB */
             return 0;
         }
         while (len) {
             --p; --tmp; --len;
             if (--offset < 0) {
+#endif
                 offset = p % TARGET_PAGE_SIZE;
                 pag = (char *)page[p/TARGET_PAGE_SIZE];
                 if (!pag) {
@@ -1192,6 +1234,21 @@ static abi_ulong copy_elf_strings(int argc,char ** argv, void **page,
                         return 0;
                 }
             }
+#if defined(TARGET_STACK_GROWS_UP)
+            if (len == 1 || offset == TARGET_PAGE_SIZE - 1) {
+                *(pag + offset) = *tmp1;
+                ++p; ++tmp1; ++offset;
+                --len;
+            } else {
+                int bytes_to_copy = (len > TARGET_PAGE_SIZE - offset) ?
+                                          (TARGET_PAGE_SIZE - offset) : len;
+                len -= bytes_to_copy;
+                memcpy_fromfs(pag + offset, tmp1, bytes_to_copy);
+                tmp1 += bytes_to_copy;
+                p += bytes_to_copy;
+                offset += bytes_to_copy;
+            }
+#else
             if (len == 0 || offset == 0) {
                 *(pag + offset) = *tmp;
             }
@@ -1203,6 +1260,7 @@ static abi_ulong copy_elf_strings(int argc,char ** argv, void **page,
                 len -= bytes_to_copy;
                 memcpy_fromfs(pag + offset, tmp, bytes_to_copy + 1);
             }
+#endif
         }
     }
     return p;
@@ -1233,10 +1291,17 @@ static abi_ulong setup_arg_pages(abi_ulong p, struct linux_binprm *bprm,
     }
 
     /* We reserve one extra page at the top of the stack as guard.  */
+#if defined(TARGET_STACK_GROWS_UP)
+    target_mprotect(error + size, guard, PROT_NONE);
+
+    info->stack_limit = error + size;
+    stack_base = error + guard;
+#else
     target_mprotect(error, guard, PROT_NONE);
 
     info->stack_limit = error + guard;
     stack_base = info->stack_limit + size - MAX_ARG_PAGES*TARGET_PAGE_SIZE;
+#endif
     p += stack_base;
 
     for (i = 0 ; i < MAX_ARG_PAGES ; i++) {
@@ -1355,10 +1420,15 @@ static abi_ulong create_elf_tables(abi_ulong p, int argc, int envc,
     k_platform = ELF_PLATFORM;
     if (k_platform) {
         size_t len = strlen(k_platform) + 1;
+#if !defined(TARGET_STACK_GROWS_UP)
         sp -= (len + n - 1) & ~(n - 1);
+#endif
         u_platform = sp;
         /* FIXME - check return value of memcpy_to_target() for failure */
         memcpy_to_target(sp, k_platform, len);
+#if defined(TARGET_STACK_GROWS_UP)
+        sp += (len + n - 1) & ~(n - 1);
+#endif
     }
 
     /*
@@ -1369,15 +1439,24 @@ static abi_ulong create_elf_tables(abi_ulong p, int argc, int envc,
     for (i = 0; i < 16; i++) {
         k_rand_bytes[i] = rand();
     }
+#if !defined(TARGET_STACK_GROWS_UP)
     sp -= 16;
+#endif
     u_rand_bytes = sp;
     /* FIXME - check return value of memcpy_to_target() for failure */
     memcpy_to_target(sp, k_rand_bytes, 16);
+#if defined(TARGET_STACK_GROWS_UP)
+    sp += 16;
+#endif
 
     /*
      * Force 16 byte _final_ alignment here for generality.
      */
+#if defined(TARGET_STACK_GROWS_UP)
+    sp = (sp + (abi_ulong)15) & ~(abi_ulong)15;
+#else
     sp = sp &~ (abi_ulong)15;
+#endif
     size = (DLINFO_ITEMS + 1) * 2;
     if (k_platform)
         size += 2;
@@ -1387,8 +1466,17 @@ static abi_ulong create_elf_tables(abi_ulong p, int argc, int envc,
     size += envc + argc + 2;
     size += 1;  /* argc itself */
     size *= n;
+#if defined(TARGET_STACK_GROWS_UP)
+    if (size & 15) {
+        sp += 16 - (size & 15);
+    }
+
+    /* jump ahead to end of auxv so we can write it backwards */
+    sp += size;
+#else
     if (size & 15)
         sp -= 16 - (size & 15);
+#endif
 
     /* This is correct because Linux defines
      * elf_addr_t as Elf32_Off / Elf64_Off
@@ -1431,7 +1519,12 @@ static abi_ulong create_elf_tables(abi_ulong p, int argc, int envc,
     info->saved_auxv = sp;
     info->auxv_len = sp_auxv - sp;
 
-    sp = loader_build_argptr(envc, argc, sp, p, 0);
+    sp = loader_build_argptr(envc, argc, sp, info->arg_start, 0);
+
+#if defined(TARGET_STACK_GROWS_UP)
+    /* move stack pointer back to end of argv */
+    sp += size;
+#endif
     return sp;
 }
 
@@ -1999,15 +2092,29 @@ int load_elf_binary(struct linux_binprm * bprm, struct target_pt_regs * regs,
 
     bprm->p = copy_elf_strings(1, &bprm->filename, bprm->page, bprm->p);
     bprm->p = copy_elf_strings(bprm->envc,bprm->envp,bprm->page,bprm->p);
+#if defined(TARGET_STACK_GROWS_UP)
+    info->arg_start = bprm->p;
+#endif
     bprm->p = copy_elf_strings(bprm->argc,bprm->argv,bprm->page,bprm->p);
     if (!bprm->p) {
         fprintf(stderr, "%s: %s\n", bprm->filename, strerror(E2BIG));
         exit(-1);
     }
+#if defined(TARGET_STACK_GROWS_UP)
+    /* put length of arg strings temporarily in arg_start */
+    info->arg_start = bprm->p - info->arg_start;
+#endif
 
     /* Do this so that we can load the interpreter, if need be.  We will
        change some of these later */
     bprm->p = setup_arg_pages(bprm->p, bprm, info);
+#if defined(TARGET_STACK_GROWS_UP)
+    /* now that p is made absolute, update arg_start */
+    info->arg_start = bprm->p - info->arg_start;
+#else
+    /* easy, it's at the front of the stack */
+    info->arg_start = bprm->p;
+#endif
 
     if (elf_interpreter) {
         load_elf_interp(elf_interpreter, &interp_info, bprm->buf);

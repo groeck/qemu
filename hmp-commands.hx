@@ -291,6 +291,53 @@ Open, close, or flush the trace file.  If no argument is given, the status of th
 ETEXI
 #endif
 
+#if defined(TARGET_META)
+    {
+        .name       = "metatrace",
+        .args_type  = "items:s",
+        .params     = "event1[,...]",
+        .help       = "activate or deactivate tracing specified events",
+        .mhandler.cmd = do_metatrace,
+    },
+
+STEXI
+@item metatrace @var{item1}[,...]
+@findex metatrace
+Activate or deactivate (with a leading '-') tracing of the specified events.
+ETEXI
+
+    {
+        .name       = "metatracefile",
+        .args_type  = "op:s,arg:F?",
+        .params     = "off|set [arg]",
+        .help       = "close trace file, or set a new file name",
+        .mhandler.cmd = do_metatrace_file,
+    },
+
+STEXI
+@item metatracefile off|set [@var{file}]
+@findex metatracefile
+Open, or close the Meta trace file @var{file}.
+ETEXI
+
+    {
+        .name       = "metatracelimit",
+        .args_type  = "lim:l?",
+        .params     = "[limit]",
+        .help       = "get or set the limit to the number of events",
+        .mhandler.cmd = do_metatrace_limit,
+    },
+
+STEXI
+@item metatracelimit [@var{limit}]
+@findex metatracelimit
+Set the limit to the number of Meta trace events before closing the file to
+@var{limit}, or if no argument is provided display the current limit. A
+@var{limit} of 0 indicates that there is no limit. The default limit is 100
+million (which would produce a trace file in the order of hundreds of megabytes.
+ETEXI
+#endif
+
     {
         .name       = "log",
         .args_type  = "items:s",

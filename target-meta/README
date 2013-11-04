@@ -1,0 +1,12 @@
+git submodule init
+git submodule update
+./configure --enable-debug --target-list=meta-softmmu
+make
+./meta-softmmu/qemu-system-meta -d out_asm,in_asm,op,op_opt,int,exec,cpu
+
+Use the argument --curses to qemu-system-meta for a terminal interface, and use
+-S to start with the cpu stopped (and you can press c at the console to start
+it).
+
+Remember to leave FIXMEs and meta_unimplemented calls anywhere translation
+isn't fully implemented so it doesn't get forgotton.
