@@ -1,5 +1,7 @@
 obj-y += meta_pic.o
 obj-y += meta_boot.o
+obj-y += meta_boot_mmu.o
+obj-y += meta_boot_tbi.o
 obj-y += ldr.o
 
 # Switch handling

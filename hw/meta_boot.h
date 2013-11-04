@@ -35,6 +35,14 @@ struct MetaBootInfo {
     /* Cmdline is put after kernel, and pointed to by GP_SECURE0 register */
     const char *kernel_cmdline;
 
+    /* RAM information */
+    hwaddr ram_phys;
+    hwaddr ram_size;
+
+    /* Callback to setup up SoC hardware in the event of a direct kernel boot */
+    void (*setup_direct_boot)(CPUArchState *env, void *opaque);
+    void *setup_direct_boot_opaque;
+
     /* If the above fails, just use a certain entry point */
     target_ulong entry;
 
@@ -44,6 +52,7 @@ struct MetaBootInfo {
     /* Some boot options */
     uint32_t flags;
 #define META_BOOT_MINIM     (1 << 0)
+#define META_BOOT_MMU_HTP   (1 << 1)
 };
 
 /* Setup the core loading of a Linux kernel image on reset */

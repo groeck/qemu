@@ -26,6 +26,8 @@
 #include "loader.h"
 #include "fw_cfg.h"
 #include "dasim.h"
+#include "meta_boot_mmu.h"
+#include "meta_boot_tbi.h"
 
 /* ELF loader */
 
@@ -472,6 +474,77 @@ static void main_cpu_reset(void *opaque)
             /* Use a GP secure register for storing pointer to cmdline */
             core->gp_secure[0] = entry + len;
         }
+    } else if (boot->kernel_filename) {
+        struct meta_mmu_seg local_segs[2], global_segs[2];
+        target_ulong lheap_addr = 0x40000000;
+        target_ulong gheap_addr = 0xc0000000;
+        target_ulong gheap_brk = gheap_addr;
+        target_ulong lheap_size, gheap_size, mmutable_size;
+        hwaddr gheap_phys, gheap_v2p;
+        target_ulong tbi, segs, args;
+
+        /*
+         * Allow the SoC to set up hardware that would normally be done by the
+         * bootloader, such as DDR and clock registers.
+         */
+        if (boot->setup_direct_boot) {
+            boot->setup_direct_boot(env, boot->setup_direct_boot_opaque);
+        }
+
+        /* Reserve either 32K (HTP) or 512K (ATP) for init page tables */
+        mmutable_size = (boot->flags & META_BOOT_MMU_HTP) ? 0x8000 : 0x80000;
+
+        /* Reserve a single 4K page for the global heap (TBI stuff) */
+        gheap_size = 0x1000;
+
+        /*
+         * Local heap maps all of RAM except a bit at the end which is used for
+         * page tables and global heap.
+         */
+        lheap_size = boot->ram_size - mmutable_size - gheap_size;
+        gheap_phys = boot->ram_phys + lheap_size;
+        gheap_v2p = gheap_phys - gheap_addr;
+        meta_mmu_init_seg(&local_segs[0], lheap_addr, lheap_addr + lheap_size,
+                          boot->ram_phys,
+                          meta_tbi_seg_id(env->thread_num, SEG_SCOPE_LOCAL,
+                                          SEG_TYPE_HEAP));
+        meta_mmu_null_seg(&local_segs[1]);
+        /* Global heap (for TBI structures) */
+        meta_mmu_init_seg(&global_segs[0], gheap_addr, gheap_addr + gheap_size,
+                          gheap_phys,
+                          meta_tbi_seg_id(env->thread_num, SEG_SCOPE_GLOBAL,
+                                          SEG_TYPE_HEAP));
+        meta_mmu_null_seg(&global_segs[1]);
+
+        /* Set up MMU tables */
+        meta_mmu_setup(env, boot->flags & META_BOOT_MMU_HTP,
+                       boot->ram_phys + boot->ram_size, local_segs,
+                       global_segs);
+
+        /* Set up TBI structures */
+        tbi = meta_tbi_setup(env, &gheap_brk, gheap_v2p);
+        segs = meta_tbi_seg_setup(env, &gheap_brk, gheap_v2p, local_segs,
+                                  global_segs);
+
+        /* Load the kernel binary */
+        len = meta_load_elf(env, boot->kernel_filename, &entry);
+
+        /* Copy command line after the kernel */
+        args = entry + len;
+        if (meta_dasim_rw(env, entry + len, (uint8_t *)boot->kernel_cmdline,
+                          qemu_strnlen(boot->kernel_cmdline, 256), 1) < 0) {
+            fprintf(stderr, "Could not copy kernel command line\n");
+            args = 0;
+        }
+
+        /* Set up kernel entry point */
+        env->pc[META_PC] = entry;   /* PC */
+        env->dregs[1][3] = tbi;     /* D1Ar1: TBI (ISTAT) */
+        env->dregs[0][3] = 0;       /* D0Ar2: TBI */
+        env->dregs[1][2] = segs;    /* D1Ar3: TBI Segments */
+        env->dregs[0][2] = args;    /* D0Ar4: Arguments or DTB */
+        env->dregs[1][4] = 0;       /* D1RtP: Return pointer */
+        meta_core_intreg_write(env, META_UNIT_CT, META_TXENABLE, 1);
     } else if (boot->entry) {
         if (META_COREMAJOR(env) >= 2 && boot->flags & META_BOOT_MINIM) {
             env->cregs[META_TXPRIVEXT] |= META_TXPRIVEXT_MINIMENABLE_MASK;
@@ -511,13 +584,6 @@ int meta_setup_boot(MetaCore *core, MetaBootInfo *boot)
         return 1;
     }
     env = &core->threads[boot->boot_thread].env;
-
-    if (boot->kernel_filename && !boot->ldr_filename) {
-        fprintf(stderr, "Cannot load kernel '%s' without an LDR file. "
-                "Please specify one with -ldr ldrImage.\n",
-                boot->kernel_filename);
-        return 1;
-    }
 
     env->boot_info = boot;
     qemu_register_reset(main_cpu_reset, env);

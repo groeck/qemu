@@ -358,6 +358,8 @@ struct chorus2_state_s *chorus2_init(unsigned long sdram_size,
     /* set up boot */
     s->boot.kernel_filename = kernel_filename;
     s->boot.kernel_cmdline = kernel_cmdline;
+    s->boot.ram_phys = C2_SDRAM_BASE;
+    s->boot.ram_size = sdram_size;
     if (!sap_comms) {
         s->boot.entry = 0x80000000;
     }

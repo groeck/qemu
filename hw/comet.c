@@ -839,6 +839,19 @@ static void comet_gpio_handler(void *opaque, int n, int level)
     comet_gpio_irq_bank_update(s, bank);
 }
 
+static void comet_setup_direct_boot(CPUArchState *env, void *opaque)
+{
+    struct comet_state_s *s = opaque;
+    MetaCore *core = META_THREAD2CORE(env);
+
+    /*
+     * Report an XTAL1 frequency of exactly 24MHz, and set the timer divider to
+     * divide it down to exactly 1MHz (the timer frequency that QEMU provides).
+     */
+    s->reset_cfg = (COMET_DEFAULT_RESET_CFG & ~0x00000f00) | 2 << 8;
+    core->expand.timer_div = 23;
+}
+
 struct comet_state_s *comet_init(unsigned long sdram_size,
                                  const char *core,
                                  const char *kernel_filename,
@@ -947,6 +960,11 @@ struct comet_state_s *comet_init(unsigned long sdram_size,
     /* set up boot */
     s->boot.kernel_filename = kernel_filename;
     s->boot.kernel_cmdline = kernel_cmdline;
+    s->boot.ram_phys = COMET_SDRAM_BASE;
+    s->boot.ram_size = sdram_size;
+    s->boot.flags |= META_BOOT_MMU_HTP;
+    s->boot.setup_direct_boot = comet_setup_direct_boot;
+    s->boot.setup_direct_boot_opaque = s;
     if (!sap_comms) {
         s->boot.entry = 0xe0000000;
         s->boot.flags |= META_BOOT_MINIM;
