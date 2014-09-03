@@ -13,6 +13,7 @@
 #include "exec/gdbstub.h"
 #include "exec/helper-proto.h"
 #include "qemu/host-utils.h"
+#include "sysemu/sysemu.h"
 #ifndef CONFIG_USER_ONLY
 #include "ui/console.h"
 #endif
@@ -217,7 +218,18 @@ static void putc_on_screen(unsigned char ch)
 
 void helper_cp1_putc(target_ulong x)
 {
-    putc_on_screen((unsigned char)x);   /* Output to screen */
+    switch(display_type) {
+    case DT_CURSES:
+	putc_on_screen((unsigned char)x);   /* Output to screen */
+	break;
+    case DT_NOGRAPHIC:
+    case DT_NONE:
+	putchar((int)x);
+	break;
+    default:
+	break;
+    }
+
     DPRINTF("%c", x);                   /* Output to stdout */
 }
 #endif
