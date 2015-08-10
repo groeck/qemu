@@ -1,3 +1,7 @@
 Read the documentation in qemu-doc.html or on http://wiki.qemu-project.org
 
 - QEMU team
+
+---
+The -local branches add improvements and fixes necessary for the
+linux-build-test project.
