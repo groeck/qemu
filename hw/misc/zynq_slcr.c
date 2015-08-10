@@ -15,6 +15,7 @@
  */
 
 #include "qemu/osdep.h"
+#include "hw/arm/linux-boot-if.h"
 #include "hw/hw.h"
 #include "qemu/timer.h"
 #include "hw/sysbus.h"
@@ -179,6 +180,8 @@ typedef struct ZynqSLCRState {
 
     MemoryRegion iomem;
 
+    bool is_linux;
+
     uint32_t regs[ZYNQ_SLCR_NUM_REGS];
 } ZynqSLCRState;
 
@@ -191,7 +194,10 @@ static void zynq_slcr_reset(DeviceState *d)
 
     s->regs[LOCKSTA] = 1;
     /* 0x100 - 0x11C */
-    s->regs[ARM_PLL_CTRL]   = 0x0001A008;
+    if (!s->is_linux)
+        s->regs[ARM_PLL_CTRL]   = 0x0001A008;
+    else
+        s->regs[ARM_PLL_CTRL]   = 0x00014008;
     s->regs[DDR_PLL_CTRL]   = 0x0001A008;
     s->regs[IO_PLL_CTRL]    = 0x0001A008;
     s->regs[PLL_STATUS]     = 0x0000003F;
@@ -200,7 +206,10 @@ static void zynq_slcr_reset(DeviceState *d)
     s->regs[IO_PLL_CFG]     = 0x00014000;
 
     /* 0x120 - 0x16C */
-    s->regs[ARM_CLK_CTRL]   = 0x1F000400;
+    if (!s->is_linux)
+        s->regs[ARM_CLK_CTRL]   = 0x1F000400;
+    else
+        s->regs[ARM_CLK_CTRL]   = 0x1F000200;
     s->regs[DDR_CLK_CTRL]   = 0x18400003;
     s->regs[DCI_CLK_CTRL]   = 0x01E03201;
     s->regs[APER_CLK_CTRL]  = 0x01FFCCCD;
@@ -431,17 +440,28 @@ static const VMStateDescription vmstate_zynq_slcr = {
     .version_id = 2,
     .minimum_version_id = 2,
     .fields = (VMStateField[]) {
+        VMSTATE_BOOL(is_linux, ZynqSLCRState),
         VMSTATE_UINT32_ARRAY(regs, ZynqSLCRState, ZYNQ_SLCR_NUM_REGS),
         VMSTATE_END_OF_LIST()
     }
 };
 
+static void zynq_sclr_linux_init(ARMLinuxBootIf *obj,
+                                 bool secure_boot)
+{
+    ZynqSLCRState *s = ZYNQ_SLCR(obj);
+
+    s->is_linux = true;
+}
+
 static void zynq_slcr_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
+    ARMLinuxBootIfClass *albifc = ARM_LINUX_BOOT_IF_CLASS(klass);
 
     dc->vmsd = &vmstate_zynq_slcr;
     dc->reset = zynq_slcr_reset;
+    albifc->arm_linux_init = zynq_sclr_linux_init;
 }
 
 static const TypeInfo zynq_slcr_info = {
@@ -450,6 +470,10 @@ static const TypeInfo zynq_slcr_info = {
     .parent = TYPE_SYS_BUS_DEVICE,
     .instance_size  = sizeof(ZynqSLCRState),
     .instance_init = zynq_slcr_init,
+    .interfaces = (InterfaceInfo []) {
+        { TYPE_ARM_LINUX_BOOT_IF },
+        { },
+    },
 };
 
 static void zynq_slcr_register_types(void)
