@@ -189,7 +189,7 @@ static void zynq_slcr_reset(DeviceState *d)
 
     s->regs[LOCKSTA] = 1;
     /* 0x100 - 0x11C */
-    s->regs[ARM_PLL_CTRL]   = 0x0001A008;
+    s->regs[ARM_PLL_CTRL]   = 0x00014008;
     s->regs[DDR_PLL_CTRL]   = 0x0001A008;
     s->regs[IO_PLL_CTRL]    = 0x0001A008;
     s->regs[PLL_STATUS]     = 0x0000003F;
@@ -198,7 +198,7 @@ static void zynq_slcr_reset(DeviceState *d)
     s->regs[IO_PLL_CFG]     = 0x00014000;
 
     /* 0x120 - 0x16C */
-    s->regs[ARM_CLK_CTRL]   = 0x1F000400;
+    s->regs[ARM_CLK_CTRL]   = 0x1F000200;
     s->regs[DDR_CLK_CTRL]   = 0x18400003;
     s->regs[DCI_CLK_CTRL]   = 0x01E03201;
     s->regs[APER_CLK_CTRL]  = 0x01FFCCCD;
