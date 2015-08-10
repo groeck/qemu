@@ -103,3 +103,7 @@ found online via the QEMU website:
   http://qemu-project.org/Contribute/StartHere
 
 -- End
+
+---
+The -local branches add improvements and fixes necessary for the
+linux-build-test project.
