@@ -148,3 +148,9 @@ Information on additional methods of contacting the community can be
 found online via the QEMU website:
 
 * `<https://qemu.org/Contribute/StartHere>`_
+
+linux-build-test
+================
+
+The -local branches add improvements and fixes necessary for the
+linux-build-test project.
