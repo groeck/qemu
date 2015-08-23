@@ -247,15 +247,17 @@ static void calxeda_init(MachineState *machine, enum cxmachines machine_id)
         cpuobj = object_new(object_class_get_name(oc));
         cpu = ARM_CPU(cpuobj);
 
-        /* By default A9 and A15 CPUs have EL3 enabled.  This board does not
+        /* By default A9 and A15 CPUs have EL3 enabled.  Midway does not
          * currently support EL3 so the CPU EL3 property is disabled before
          * realization.
          */
         if (object_property_find(cpuobj, "has_el3", NULL)) {
-            object_property_set_bool(cpuobj, false, "has_el3", &err);
-            if (err) {
-                error_report_err(err);
-                exit(1);
+            if (machine_id == CALXEDA_MIDWAY) {
+                object_property_set_bool(cpuobj, false, "has_el3", &err);
+                if (err) {
+                    error_report_err(err);
+                    exit(1);
+                }
             }
         }
 
@@ -299,6 +301,8 @@ static void calxeda_init(MachineState *machine, enum cxmachines machine_id)
         qdev_init_nofail(dev);
         busdev = SYS_BUS_DEVICE(dev);
         sysbus_mmio_map(busdev, 0, 0xfff12000);
+
+        /* TODO Install SMC callback */
 
         dev = qdev_create(NULL, "a9mpcore_priv");
         break;
