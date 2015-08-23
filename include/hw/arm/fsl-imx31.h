@@ -22,6 +22,7 @@
 #include "hw/misc/imx31_ccm.h"
 #include "hw/char/imx_serial.h"
 #include "hw/timer/imx_gpt.h"
+#include "hw/timer/imx_wdog.h"
 #include "hw/timer/imx_epit.h"
 #include "hw/i2c/imx_i2c.h"
 #include "hw/gpio/imx_gpio.h"
@@ -46,6 +47,7 @@ typedef struct FslIMX31State {
     IMX31CCMState  ccm;
     IMXSerialState uart[FSL_IMX31_NUM_UARTS];
     IMXGPTState    gpt;
+    IMXWDOGState   wdog;
     IMXEPITState   epit[FSL_IMX31_NUM_EPITS];
     IMXI2CState    i2c[FSL_IMX31_NUM_I2CS];
     IMXGPIOState   gpio[FSL_IMX31_NUM_GPIOS];
@@ -87,6 +89,8 @@ typedef struct FslIMX31State {
 #define FSL_IMX31_GPIO1_SIZE            0x4000
 #define FSL_IMX31_GPIO2_ADDR            0x53FD0000
 #define FSL_IMX31_GPIO2_SIZE            0x4000
+#define FSL_IMX31_WDOG_ADDR             0x53FDC000
+#define FSL_IMX31_WDOG_SIZE             0x4000
 #define FSL_IMX31_AVIC_ADDR             0x68000000
 #define FSL_IMX31_AVIC_SIZE             0x100
 #define FSL_IMX31_SDRAM0_ADDR           0x80000000
