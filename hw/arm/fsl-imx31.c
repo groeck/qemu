@@ -49,6 +49,9 @@ static void fsl_imx31_init(Object *obj)
 
     sysbus_init_child_obj(obj, "gpt", &s->gpt, sizeof(s->gpt), TYPE_IMX31_GPT);
 
+    object_initialize(&s->wdog, sizeof(s->wdog), TYPE_IMX_WDOG);
+    qdev_set_parent_bus(DEVICE(&s->wdog), sysbus_get_default());
+
     for (i = 0; i < FSL_IMX31_NUM_EPITS; i++) {
         sysbus_init_child_obj(obj, "epit[*]", &s->epit[i], sizeof(s->epit[i]),
                               TYPE_IMX_EPIT);
@@ -154,6 +157,15 @@ static void fsl_imx31_realize(DeviceState *dev, Error **errp)
                            qdev_get_gpio_in(DEVICE(&s->avic),
                                             epit_table[i].irq));
     }
+
+    s->wdog.ccm = DEVICE(&s->ccm);
+    object_property_set_bool(OBJECT(&s->wdog), true, "realized", &err);
+    if (err) {
+        error_propagate(errp, err);
+        return;
+    }
+
+    sysbus_mmio_map(SYS_BUS_DEVICE(&s->wdog), 0, FSL_IMX31_WDOG_ADDR);
 
     /* Initialize all I2C */
     for (i = 0; i < FSL_IMX31_NUM_I2CS; i++) {

@@ -12,6 +12,7 @@ common-obj-$(CONFIG_ETRAXFS) += etraxfs_timer.o
 common-obj-$(CONFIG_GRLIB) += grlib_gptimer.o
 common-obj-$(CONFIG_IMX) += imx_epit.o
 common-obj-$(CONFIG_IMX) += imx_gpt.o
+common-obj-$(CONFIG_IMX) += imx_wdog.o
 common-obj-$(CONFIG_LM32) += lm32_timer.o
 common-obj-$(CONFIG_MILKYMIST) += milkymist-sysctl.o
 common-obj-$(CONFIG_NRF51_SOC) += nrf51_timer.o
