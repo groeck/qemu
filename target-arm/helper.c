@@ -4676,6 +4676,11 @@ void arm_cpu_do_interrupt(CPUState *cs)
         return;
     }
 
+    if (cs->exception_index == EXCP_SMC) {
+	arm_handle_smc_call(cpu);
+	return;
+    }
+
     /* If this is a debug exception we must update the DBGDSCR.MOE bits */
     switch (env->exception.syndrome >> ARM_EL_EC_SHIFT) {
     case EC_BREAKPOINT:

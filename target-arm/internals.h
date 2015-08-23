@@ -379,6 +379,8 @@ static inline bool arm_is_psci_call(ARMCPU *cpu, int excp_type)
 bool arm_is_psci_call(ARMCPU *cpu, int excp_type);
 /* Actually handle a PSCI call */
 void arm_handle_psci_call(ARMCPU *cpu);
+/* Handle SMC calls */
+void arm_handle_smc_call(ARMCPU *cpu);
 #endif
 
 #endif
