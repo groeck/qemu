@@ -41,6 +41,7 @@
      *   0x53f94000 PIT 1                         EMULATED
      *   0x53f98000 PIT 2                         EMULATED
      *   0x53f90000 GPT                           EMULATED
+     *   0x53fdc000 WDOG                          EMULATED
      * 0x80000000-0x87ffffff RAM                  EMULATED
      * 0x88000000-0x8fffffff RAM Aliasing         EMULATED
      * 0xa0000000-0xafffffff NAND Flash           IGNORED
@@ -119,6 +120,7 @@ static void kzm_init(MachineState *machine)
     imx_timerp_create(0x53f94000, qdev_get_gpio_in(dev, 28), ccm);
     imx_timerp_create(0x53f98000, qdev_get_gpio_in(dev, 27), ccm);
     imx_timerg_create(0x53f90000, qdev_get_gpio_in(dev, 29), ccm);
+    imx_timerw_create(0x53fdc000, ccm);
 
     if (nd_table[0].used) {
         lan9118_init(&nd_table[0], 0xb6000000, qdev_get_gpio_in(dev, 52));
