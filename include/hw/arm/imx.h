@@ -29,6 +29,6 @@ void imx_timerp_create(const hwaddr addr,
 void imx_timerg_create(const hwaddr addr,
                       qemu_irq irq,
                       DeviceState *ccm);
-
+void imx_timerw_create(const hwaddr addr, DeviceState *ccm);
 
 #endif /* IMX_H */
