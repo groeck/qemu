@@ -9334,6 +9334,11 @@ static void arm_cpu_do_interrupt_aarch32(CPUState *cs)
     uint32_t offset;
     uint32_t moe;
 
+    if (cs->exception_index == EXCP_SMC) {
+	arm_handle_smc_call(cpu);
+	return;
+    }
+
     /* If this is a debug exception we must update the DBGDSCR.MOE bits */
     switch (syn_get_ec(env->exception.syndrome)) {
     case EC_BREAKPOINT:
