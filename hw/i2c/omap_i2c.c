@@ -296,7 +296,11 @@ static uint32_t omap_i2c_read(void *opaque, hwaddr addr)
             s->test ^= 0xa;
             return s->test;
         }
-        return s->test & ~0x300f;
+        ret = s->test & ~0x300f;
+        /* report SDA/SCL high if bus is idle */
+        if (!i2c_bus_busy(s->bus))
+            ret |= (1 << 8) | (1 << 6);
+        return ret;
     case 0x40: /* I2C_BUFSTAT */
         if (s->revision >= OMAP3_INTR_REV) {
             switch (s->fifosize) {
