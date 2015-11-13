@@ -50,11 +50,50 @@ static void mpc8544ds_init(MachineState *machine)
 }
 
 
-static void ppce500_machine_init(MachineClass *mc)
+static void mpc8544ds_machine_init(MachineClass *mc)
 {
     mc->desc = "mpc8544ds";
     mc->init = mpc8544ds_init;
     mc->max_cpus = 15;
 }
 
-DEFINE_MACHINE("mpc8544ds", ppce500_machine_init)
+static void mpc8548cds_fixup_devtree(PPCE500Params *params, void *fdt)
+{
+    const char model[] = "MPC8548CDS";
+    const char compatible[] = "MPC8548CDS\0MPC85xxCDS";
+
+    qemu_fdt_setprop(fdt, "/", "model", model, sizeof(model));
+    qemu_fdt_setprop(fdt, "/", "compatible", compatible, sizeof(compatible));
+}
+
+static void mpc8548cds_init(MachineState *machine)
+{
+    PPCE500Params params = {
+        .pci_first_slot = 0x1,
+        .pci_nr_slots = 2,
+        .fixup_devtree = mpc8548cds_fixup_devtree,
+        .mpic_version = OPENPIC_MODEL_FSL_MPIC_42,
+        .ccsrbar_base = 0xE0000000ULL,
+        .pci_mmio_base = 0xC0000000ULL,
+        .pci_mmio_bus_base = 0xC0000000ULL,
+        .pci_pio_base = 0xE1000000ULL,
+        .spin_base = 0xEF000000ULL,
+    };
+
+    if (machine->ram_size > 0x80000000) {
+        error_report("The MPC8548CDS board only supports up to 2GB of RAM");
+        exit(1);
+    }
+
+    ppce500_init(machine, &params);
+}
+
+static void mpc8548cds_machine_init(MachineClass *mc)
+{
+    mc->desc = "mpc8548cds";
+    mc->init = mpc8548cds_init;
+    mc->max_cpus = 15;
+}
+
+DEFINE_MACHINE("mpc8544ds", mpc8544ds_machine_init)
+DEFINE_MACHINE("mpc8548cds", mpc8548cds_machine_init)
