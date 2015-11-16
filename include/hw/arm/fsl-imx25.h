@@ -22,6 +22,7 @@
 #include "hw/misc/imx25_ccm.h"
 #include "hw/char/imx_serial.h"
 #include "hw/timer/imx_gpt.h"
+#include "hw/timer/imx_wdog.h"
 #include "hw/timer/imx_epit.h"
 #include "hw/net/imx_fec.h"
 #include "hw/i2c/imx_i2c.h"
@@ -48,6 +49,7 @@ typedef struct FslIMX25State {
     IMX25CCMState  ccm;
     IMXSerialState uart[FSL_IMX25_NUM_UARTS];
     IMXGPTState    gpt[FSL_IMX25_NUM_GPTS];
+    IMXWDOGState   wdog;
     IMXEPITState   epit[FSL_IMX25_NUM_EPITS];
     IMXFECState    fec;
     IMXI2CState    i2c[FSL_IMX25_NUM_I2CS];
@@ -215,6 +217,8 @@ typedef struct FslIMX25State {
 #define FSL_IMX25_GPIO1_SIZE    0x4000
 #define FSL_IMX25_GPIO2_ADDR    0x53FD0000
 #define FSL_IMX25_GPIO2_SIZE    0x4000
+#define FSL_IMX25_WDOG_ADDR     0x53FDC000
+#define FSL_IMX25_WDOG_SIZE     0x4000
 #define FSL_IMX25_AVIC_ADDR     0x68000000
 #define FSL_IMX25_AVIC_SIZE     0x4000
 #define FSL_IMX25_IRAM_ADDR     0x78000000
