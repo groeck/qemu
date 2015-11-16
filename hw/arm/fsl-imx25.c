@@ -55,6 +55,9 @@ static void fsl_imx25_init(Object *obj)
                               TYPE_IMX25_GPT);
     }
 
+    object_initialize(&s->wdog, sizeof(s->wdog), TYPE_IMX_WDOG);
+    qdev_set_parent_bus(DEVICE(&s->wdog), sysbus_get_default());
+
     for (i = 0; i < FSL_IMX25_NUM_EPITS; i++) {
         sysbus_init_child_obj(obj, "epit[*]", &s->epit[i], sizeof(s->epit[i]),
                               TYPE_IMX_EPIT);
@@ -188,6 +191,13 @@ static void fsl_imx25_realize(DeviceState *dev, Error **errp)
     sysbus_connect_irq(SYS_BUS_DEVICE(&s->fec), 0,
                        qdev_get_gpio_in(DEVICE(&s->avic), FSL_IMX25_FEC_IRQ));
 
+    s->wdog.ccm = DEVICE(&s->ccm);
+    object_property_set_bool(OBJECT(&s->wdog), true, "realized", &err);
+    if (err) {
+        error_propagate(errp, err);
+        return;
+    }
+    sysbus_mmio_map(SYS_BUS_DEVICE(&s->wdog), 0, FSL_IMX25_WDOG_ADDR);
 
     /* Initialize all I2C */
     for (i = 0; i < FSL_IMX25_NUM_I2CS; i++) {
