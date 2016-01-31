@@ -42,6 +42,8 @@ typedef struct TMP105State {
     int16_t limit[2];
     int faults;
     uint8_t alarm;
+    uint8_t low_alarm;
+    uint8_t high_alarm;
 } TMP105State;
 
 #endif
