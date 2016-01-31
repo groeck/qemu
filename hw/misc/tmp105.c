@@ -42,10 +42,15 @@ static void tmp105_alarm_update(TMP105State *s)
     }
 
     if ((s->config >> 1) & 1) {					/* TM */
-        if (s->temperature >= s->limit[1])
+        if (s->temperature >= s->limit[1] && !s->high_alarm) {
             s->alarm = 1;
-        else if (s->temperature < s->limit[0])
+            s->high_alarm = 1;
+            s->low_alarm = 0;
+        } else if (s->temperature < s->limit[0] && !s->low_alarm) {
             s->alarm = 1;
+            s->low_alarm = 1;
+            s->high_alarm = 0;
+        }
     } else {
         if (s->temperature >= s->limit[1])
             s->alarm = 1;
@@ -210,6 +215,8 @@ static const VMStateDescription vmstate_tmp105 = {
         VMSTATE_INT16(temperature, TMP105State),
         VMSTATE_INT16_ARRAY(limit, TMP105State, 2),
         VMSTATE_UINT8(alarm, TMP105State),
+        VMSTATE_UINT8(low_alarm, TMP105State),
+        VMSTATE_UINT8(high_alarm, TMP105State),
         VMSTATE_I2C_SLAVE(i2c, TMP105State),
         VMSTATE_END_OF_LIST()
     }
@@ -220,10 +227,14 @@ static void tmp105_reset(I2CSlave *i2c)
     TMP105State *s = TMP105(i2c);
 
     s->temperature = 0;
+    s->limit[0] = 75 << 8;
+    s->limit[1] = 80 << 8;
     s->pointer = 0;
     s->config = 0;
     s->faults = tmp105_faultq[(s->config >> 3) & 3];
     s->alarm = 0;
+    s->low_alarm = 0;
+    s->high_alarm = 0;
 
     tmp105_interrupt_update(s);
 }
