@@ -26,6 +26,7 @@
 #include "hw/usb/hcd-ohci.h"
 
 #define AW_A10_MMC0_BASE        0x01c0f000
+#define AW_A10_CCM_REG_BASE     0x01c20000
 #define AW_A10_PIC_REG_BASE     0x01c20400
 #define AW_A10_PIT_REG_BASE     0x01c20c00
 #define AW_A10_UART0_REG_BASE   0x01c28000
@@ -43,6 +44,8 @@ static void aw_a10_init(Object *obj)
                             ARM_CPU_TYPE_NAME("cortex-a8"));
 
     object_initialize_child(obj, "intc", &s->intc, TYPE_AW_A10_PIC);
+
+    object_initialize_child(obj, "ccm", &s->ccm, TYPE_AW_A10_CCM);
 
     object_initialize_child(obj, "timer", &s->timer, TYPE_AW_A10_PIT);
 
@@ -89,6 +92,13 @@ static void aw_a10_realize(DeviceState *dev, Error **errp)
     if (!sysbus_realize(SYS_BUS_DEVICE(&s->timer), errp)) {
         return;
     }
+
+    sysbusdev = SYS_BUS_DEVICE(&s->ccm);
+    if (!sysbus_realize(sysbusdev, errp)) {
+        return;
+    }
+    sysbus_mmio_map(sysbusdev, 0, AW_A10_CCM_REG_BASE);
+
     sysbusdev = SYS_BUS_DEVICE(&s->timer);
     sysbus_mmio_map(sysbusdev, 0, AW_A10_PIT_REG_BASE);
     sysbus_connect_irq(sysbusdev, 0, qdev_get_gpio_in(dev, 22));
