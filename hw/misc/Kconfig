@@ -11,6 +11,10 @@ config ARMSSE_MHU
 config ARMSSE_CPU_PWRCTRL
     bool
 
+config ALLWINNER_A10_CCM
+    bool
+    depends on ALLWINNER_A10
+
 config ISA_DEBUG
     bool
     depends on ISA_BUS
