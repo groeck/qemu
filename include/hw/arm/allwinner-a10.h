@@ -4,6 +4,7 @@
 #include "qemu/error-report.h"
 #include "hw/char/serial.h"
 #include "hw/arm/boot.h"
+#include "hw/misc/allwinner-a10-ccm.h"
 #include "hw/timer/allwinner-a10-pit.h"
 #include "hw/intc/allwinner-a10-pic.h"
 #include "hw/net/allwinner_emac.h"
@@ -12,6 +13,7 @@
 #include "target/arm/cpu.h"
 
 
+#define AW_A10_CCM_REG_BASE     0x01c20000
 #define AW_A10_PIC_REG_BASE     0x01c20400
 #define AW_A10_PIT_REG_BASE     0x01c20c00
 #define AW_A10_UART0_REG_BASE   0x01c28000
@@ -32,6 +34,7 @@ typedef struct AwA10State {
     qemu_irq irq[AW_A10_PIC_INT_NR];
     AwA10PITState timer;
     AwA10PICState intc;
+    AwA10CCMState ccm;
     AwEmacState emac;
     AllwinnerAHCIState sata;
     MemoryRegion sram_a;
