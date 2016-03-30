@@ -72,6 +72,8 @@ obj-$(CONFIG_IOTKIT_SYSINFO) += iotkit-sysinfo.o
 obj-$(CONFIG_ARMSSE_CPUID) += armsse-cpuid.o
 obj-$(CONFIG_ARMSSE_MHU) += armsse-mhu.o
 
+obj-$(CONFIG_ALLWINNER_A10_CCM) += allwinner-a10-ccm.o
+
 obj-$(CONFIG_PVPANIC) += pvpanic.o
 obj-$(CONFIG_AUX) += auxbus.o
 obj-$(CONFIG_ASPEED_SOC) += aspeed_xdma.o
