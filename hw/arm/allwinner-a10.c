@@ -30,6 +30,9 @@ static void aw_a10_init(Object *obj)
     object_initialize(&s->cpu, sizeof(s->cpu), "cortex-a8-" TYPE_ARM_CPU);
     object_property_add_child(obj, "cpu", OBJECT(&s->cpu), NULL);
 
+    object_initialize(&s->ccm, sizeof(s->ccm), TYPE_AW_A10_CCM);
+    qdev_set_parent_bus(DEVICE(&s->ccm), sysbus_get_default());
+
     object_initialize(&s->intc, sizeof(s->intc), TYPE_AW_A10_PIC);
     qdev_set_parent_bus(DEVICE(&s->intc), sysbus_get_default());
 
@@ -61,6 +64,15 @@ static void aw_a10_realize(DeviceState *dev, Error **errp)
         error_propagate(errp, err);
         return;
     }
+
+    object_property_set_bool(OBJECT(&s->ccm), true, "realized", &err);
+    if (err != NULL) {
+        error_propagate(errp, err);
+        return;
+    }
+    sysbusdev = SYS_BUS_DEVICE(&s->ccm);
+    sysbus_mmio_map(sysbusdev, 0, AW_A10_CCM_REG_BASE);
+
     irq = qdev_get_gpio_in(DEVICE(&s->cpu), ARM_CPU_IRQ);
     fiq = qdev_get_gpio_in(DEVICE(&s->cpu), ARM_CPU_FIQ);
 
