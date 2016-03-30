@@ -4,6 +4,7 @@
 #include "qemu/error-report.h"
 #include "hw/char/serial.h"
 #include "hw/arm/boot.h"
+#include "hw/misc/allwinner-a10-ccm.h"
 #include "hw/timer/allwinner-a10-pit.h"
 #include "hw/intc/allwinner-a10-pic.h"
 #include "hw/net/allwinner_emac.h"
@@ -14,7 +15,6 @@
 #include "hw/rtc/allwinner-rtc.h"
 
 #include "target/arm/cpu.h"
-
 
 #define AW_A10_SDRAM_BASE       0x40000000
 
@@ -31,6 +31,7 @@ typedef struct AwA10State {
     ARMCPU cpu;
     AwA10PITState timer;
     AwA10PICState intc;
+    AwA10CCMState ccm;
     AwEmacState emac;
     AllwinnerAHCIState sata;
     AwSdHostState mmc0;
