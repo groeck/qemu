@@ -28,6 +28,7 @@
 #include "hw/usb/hcd-ohci.h"
 
 #define AW_A10_MMC0_BASE        0x01c0f000
+#define AW_A10_CCM_REG_BASE     0x01c20000
 #define AW_A10_PIC_REG_BASE     0x01c20400
 #define AW_A10_PIT_REG_BASE     0x01c20c00
 #define AW_A10_UART0_REG_BASE   0x01c28000
@@ -44,6 +45,9 @@ static void aw_a10_init(Object *obj)
     object_initialize_child(obj, "cpu", &s->cpu, sizeof(s->cpu),
                             ARM_CPU_TYPE_NAME("cortex-a8"),
                             &error_abort, NULL);
+
+    sysbus_init_child_obj(obj, "ccm", &s->ccm, sizeof(s->ccm),
+                          TYPE_AW_A10_CCM);
 
     sysbus_init_child_obj(obj, "intc", &s->intc, sizeof(s->intc),
                           TYPE_AW_A10_PIC);
@@ -85,6 +89,14 @@ static void aw_a10_realize(DeviceState *dev, Error **errp)
         error_propagate(errp, err);
         return;
     }
+
+    object_property_set_bool(OBJECT(&s->ccm), true, "realized", &err);
+    if (err != NULL) {
+        error_propagate(errp, err);
+        return;
+    }
+    sysbusdev = SYS_BUS_DEVICE(&s->ccm);
+    sysbus_mmio_map(sysbusdev, 0, AW_A10_CCM_REG_BASE);
 
     object_property_set_bool(OBJECT(&s->intc), true, "realized", &err);
     if (err != NULL) {

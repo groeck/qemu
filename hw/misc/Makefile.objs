@@ -81,6 +81,8 @@ common-obj-$(CONFIG_IOTKIT_SYSINFO) += iotkit-sysinfo.o
 common-obj-$(CONFIG_ARMSSE_CPUID) += armsse-cpuid.o
 common-obj-$(CONFIG_ARMSSE_MHU) += armsse-mhu.o
 
+common-obj-$(CONFIG_ALLWINNER_A10_CCM) += allwinner-a10-ccm.o
+
 common-obj-$(CONFIG_PVPANIC) += pvpanic.o
 common-obj-$(CONFIG_AUX) += auxbus.o
 common-obj-$(CONFIG_ASPEED_SOC) += aspeed_xdma.o
