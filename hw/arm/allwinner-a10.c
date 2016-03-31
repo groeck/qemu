@@ -24,10 +24,13 @@
 #include "hw/arm/allwinner-a10.h"
 #include "hw/misc/unimp.h"
 #include "sysemu/sysemu.h"
+#include "hw/boards.h"
+#include "hw/usb/hcd-ohci.h"
 
 static void aw_a10_init(Object *obj)
 {
     AwA10State *s = AW_A10(obj);
+    int i;
 
     object_initialize_child(obj, "cpu", &s->cpu, sizeof(s->cpu),
                             ARM_CPU_TYPE_NAME("cortex-a8"),
@@ -46,6 +49,13 @@ static void aw_a10_init(Object *obj)
 
     sysbus_init_child_obj(obj, "sata", &s->sata, sizeof(s->sata),
                           TYPE_ALLWINNER_AHCI);
+
+    if (machine_usb(current_machine)) {
+        for (i = 0; i < ARRAY_SIZE(s->ohci); i++) {
+            sysbus_init_child_obj(obj, "ohci[*]", OBJECT(&s->ohci[i]),
+                                  sizeof(s->ohci[i]), TYPE_SYSBUS_OHCI);
+        }
+    }
 }
 
 static void aw_a10_realize(DeviceState *dev, Error **errp)
@@ -130,6 +140,20 @@ static void aw_a10_realize(DeviceState *dev, Error **errp)
     /* FIXME use a qdev chardev prop instead of serial_hd() */
     serial_mm_init(get_system_memory(), AW_A10_UART0_REG_BASE, 2, s->irq[1],
                    115200, serial_hd(0), DEVICE_NATIVE_ENDIAN);
+
+    if (machine_usb(current_machine)) {
+        for (i = 0; i < ARRAY_SIZE(s->ohci); i++) {
+            object_property_set_bool(OBJECT(&s->ohci[i]), true, "realized",
+                                     &err);
+            if (err) {
+                error_propagate(errp, err);
+                return;
+            }
+            sysbus_mmio_map(SYS_BUS_DEVICE(&s->ohci[i]), 0,
+                            AW_A10_OHCI_BASE + i * 0x8000);
+            sysbus_connect_irq(SYS_BUS_DEVICE(&s->ohci[i]), 0, s->irq[64 + i]);
+        }
+    }
 }
 
 static void aw_a10_class_init(ObjectClass *oc, void *data)
