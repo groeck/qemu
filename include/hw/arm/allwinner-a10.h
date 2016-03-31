@@ -10,6 +10,7 @@
 #include "hw/net/allwinner_emac.h"
 #include "hw/ide/ahci.h"
 #include "hw/usb/hcd-ohci.h"
+#include "hw/usb/hcd-ehci.h"
 
 #include "target/arm/cpu.h"
 
@@ -19,6 +20,7 @@
 #define AW_A10_PIT_REG_BASE     0x01c20c00
 #define AW_A10_UART0_REG_BASE   0x01c28000
 #define AW_A10_EMAC_BASE        0x01c0b000
+#define AW_A10_EHCI_BASE        0x01c14000
 #define AW_A10_OHCI_BASE        0x01c14400
 #define AW_A10_SATA_BASE        0x01c18000
 
@@ -41,6 +43,7 @@ typedef struct AwA10State {
     AllwinnerAHCIState sata;
     MemoryRegion sram_a;
     OHCISysBusState ohci[2];
+    EHCISysBusState ehci[2];
 } AwA10State;
 
 #endif

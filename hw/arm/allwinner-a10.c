@@ -55,6 +55,10 @@ static void aw_a10_init(Object *obj)
             sysbus_init_child_obj(obj, "ohci[*]", OBJECT(&s->ohci[i]),
                                   sizeof(s->ohci[i]), TYPE_SYSBUS_OHCI);
         }
+        for (i = 0; i < ARRAY_SIZE(s->ehci); i++) {
+            sysbus_init_child_obj(obj, "ehci[*]", OBJECT(&s->ehci[i]),
+                                  sizeof(s->ehci[i]), TYPE_PLATFORM_EHCI);
+        }
     }
 }
 
@@ -152,6 +156,17 @@ static void aw_a10_realize(DeviceState *dev, Error **errp)
             sysbus_mmio_map(SYS_BUS_DEVICE(&s->ohci[i]), 0,
                             AW_A10_OHCI_BASE + i * 0x8000);
             sysbus_connect_irq(SYS_BUS_DEVICE(&s->ohci[i]), 0, s->irq[64 + i]);
+        }
+        for (i = 0; i < ARRAY_SIZE(s->ehci); i++) {
+            object_property_set_bool(OBJECT(&s->ehci[i]), true, "realized",
+                                     &err);
+            if (err) {
+                error_propagate(errp, err);
+                return;
+            }
+            sysbus_mmio_map(SYS_BUS_DEVICE(&s->ehci[i]), 0,
+                            AW_A10_EHCI_BASE + i * 0x8000);
+            sysbus_connect_irq(SYS_BUS_DEVICE(&s->ehci[i]), 0, s->irq[39 + i]);
         }
     }
 }
