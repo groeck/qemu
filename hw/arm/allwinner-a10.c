@@ -22,6 +22,7 @@
 #include "hw/sysbus.h"
 #include "hw/devices.h"
 #include "hw/arm/allwinner-a10.h"
+#include "hw/usb/hcd-ehci.h"
 
 static void aw_a10_init(Object *obj)
 {
@@ -129,6 +130,10 @@ static void aw_a10_realize(DeviceState *dev, Error **errp)
 			     s->irq[64]);
 	sysbus_create_simple("sysbus-ohci", 0x01c1c400,
 			     s->irq[65]);
+        sysbus_create_simple(TYPE_AW_A10_EHCI, 0x01c14000,
+			     s->irq[39]);
+        sysbus_create_simple(TYPE_AW_A10_EHCI, 0x01c1c000,
+			     s->irq[40]);
     }
 }
 
