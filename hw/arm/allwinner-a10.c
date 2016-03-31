@@ -123,6 +123,13 @@ static void aw_a10_realize(DeviceState *dev, Error **errp)
     /* FIXME use a qdev chardev prop instead of serial_hds[] */
     serial_mm_init(get_system_memory(), AW_A10_UART0_REG_BASE, 2, s->irq[1],
                    115200, serial_hds[0], DEVICE_NATIVE_ENDIAN);
+
+    if (usb_enabled()) {
+	sysbus_create_simple("sysbus-ohci", 0x01c14400,
+			     s->irq[64]);
+	sysbus_create_simple("sysbus-ohci", 0x01c1c400,
+			     s->irq[65]);
+    }
 }
 
 static void aw_a10_class_init(ObjectClass *oc, void *data)
