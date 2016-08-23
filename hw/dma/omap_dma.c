@@ -1700,9 +1700,11 @@ static void omap_dma_setcaps(struct omap_dma_s *s)
         s->caps[0] =
                 (1 << 19) |	/* Constant Fill Capability */
                 (1 << 18);	/* Transparent BLT Capability */
+#if 0
         if (cpu_is_omap3630(s->mpu)) {
             s->caps[0] |= (1 << 20); /* LINK_LIST_CPBLTY_TYPE123 */
         }
+#endif
         s->caps[1] =
                 (1 << 1);	/* 1-bit palettized capability (DMA 3.2 only) */
         s->caps[2] =
