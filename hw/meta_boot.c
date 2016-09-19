@@ -144,18 +144,23 @@ static int _meta_load_elf(const char *filename,
 static int meta_load_elf(CPUArchState *env, const char *elf, target_ulong *entry)
 {
     uint64_t entryp, high;
-    int image_size;
+    int ret;
 
     entryp = 0;
     elf_env = env;
-    image_size = _meta_load_elf(elf, NULL, NULL, &entryp, NULL, &high, 0,
-                                ELF_MACHINE, 0);
+    ret = _meta_load_elf(elf, NULL, NULL, &entryp, NULL, &high, 0, ELF_MACHINE,
+                         0);
+    if (ret < 0) {
+        fprintf(stderr, "qemu: could not load kernel '%s'\n",
+                elf);
+        exit(1);
+    }
 
     if (entry) {
         *entry = entryp;
     }
 
-    return image_size;
+    return high - entryp;
 }
 
 /* Loading using LDR file */
