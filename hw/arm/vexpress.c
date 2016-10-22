@@ -178,6 +178,7 @@ typedef struct {
 #define TYPE_VEXPRESS_MACHINE   "vexpress"
 #define TYPE_VEXPRESS_A9_MACHINE   MACHINE_TYPE_NAME("vexpress-a9")
 #define TYPE_VEXPRESS_A15_MACHINE   MACHINE_TYPE_NAME("vexpress-a15")
+#define TYPE_VEXPRESS_A15_A7_MACHINE   MACHINE_TYPE_NAME("vexpress-a15-a7")
 #define VEXPRESS_MACHINE(obj) \
     OBJECT_CHECK(VexpressMachineState, (obj), TYPE_VEXPRESS_MACHINE)
 #define VEXPRESS_MACHINE_GET_CLASS(obj) \
@@ -423,6 +424,18 @@ static VEDBoardInfo a15_daughterboard = {
     .loader_start = 0x80000000,
     .gic_cpu_if_addr = 0x2c002000,
     .proc_id = 0x14000237,
+    .num_voltage_sensors = ARRAY_SIZE(a15_voltages),
+    .voltages = a15_voltages,
+    .num_clocks = ARRAY_SIZE(a15_clocks),
+    .clocks = a15_clocks,
+    .init = a15_daughterboard_init,
+};
+
+static VEDBoardInfo a15_a7_daughterboard = {
+    .motherboard_map = motherboard_aseries_map,
+    .loader_start = 0x80000000,
+    .gic_cpu_if_addr = 0x2c002000,
+    .proc_id = 0x14000249,
     .num_voltage_sensors = ARRAY_SIZE(a15_voltages),
     .voltages = a15_voltages,
     .num_clocks = ARRAY_SIZE(a15_clocks),
@@ -819,6 +832,17 @@ static void vexpress_a15_class_init(ObjectClass *oc, void *data)
     vmc->daughterboard = &a15_daughterboard;
 }
 
+static void vexpress_a15_a7_class_init(ObjectClass *oc, void *data)
+{
+    MachineClass *mc = MACHINE_CLASS(oc);
+    VexpressMachineClass *vmc = VEXPRESS_MACHINE_CLASS(oc);
+
+    mc->desc = "ARM Versatile Express for Cortex-A15-A7";
+    mc->default_cpu_type = ARM_CPU_TYPE_NAME("cortex-a15");
+
+    vmc->daughterboard = &a15_a7_daughterboard;
+}
+
 static const TypeInfo vexpress_info = {
     .name = TYPE_VEXPRESS_MACHINE,
     .parent = TYPE_MACHINE,
@@ -843,11 +867,18 @@ static const TypeInfo vexpress_a15_info = {
     .instance_init = vexpress_a15_instance_init,
 };
 
+static const TypeInfo vexpress_a15_a7_info = {
+    .name = TYPE_VEXPRESS_A15_A7_MACHINE,
+    .parent = TYPE_VEXPRESS_MACHINE,
+    .class_init = vexpress_a15_a7_class_init,
+};
+
 static void vexpress_machine_init(void)
 {
     type_register_static(&vexpress_info);
     type_register_static(&vexpress_a9_info);
     type_register_static(&vexpress_a15_info);
+    type_register_static(&vexpress_a15_a7_info);
 }
 
 type_init(vexpress_machine_init);
