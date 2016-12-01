@@ -9,6 +9,10 @@ config TMP105
     bool
     depends on I2C
 
+config TMP108
+    bool
+    depends on I2C
+
 config ALLWINNER_A10_CCM
     bool
     depends on ALLWINNER_A10
