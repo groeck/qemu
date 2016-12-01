@@ -3,6 +3,10 @@ config TMP105
     depends on I2C
     default y if I2C_DEVICES
 
+config TMP108
+    bool
+    depends on I2C
+
 config TMP421
     bool
     depends on I2C
