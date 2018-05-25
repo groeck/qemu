@@ -7953,11 +7953,13 @@ static void gen_spr_power6_common(CPUPPCState *env)
 #endif
     /*
      * Register PCR to report POWERPC_EXCP_PRIV_REG instead of
-     * POWERPC_EXCP_INVAL_SPR.
+     * POWERPC_EXCP_INVAL_SPR in userspace. Permit privileged
+     * access.
      */
-    spr_register(env, SPR_PCR, "PCR",
+    spr_register_hv(env, SPR_PCR, "PCR",
                  SPR_NOACCESS, SPR_NOACCESS,
                  SPR_NOACCESS, SPR_NOACCESS,
+                 &spr_read_generic, &spr_write_generic,
                  0x00000000);
 }
 
