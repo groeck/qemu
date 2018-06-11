@@ -4606,6 +4606,12 @@ static void x86_cpu_enable_xsave_components(X86CPU *cpu)
         }
     }
 
+    /* drop unsupported features */
+    mask &= ~(XSTATE_OPMASK_MASK | XSTATE_ZMM_Hi256_MASK |
+              XSTATE_Hi16_ZMM_MASK | XSTATE_PKRU_MASK);
+    if (!(mask & (XSTATE_BNDREGS_MASK | XSTATE_BNDCSR_MASK)))
+        mask &= ~XSTATE_YMM_MASK;
+
     env->features[FEAT_XSAVE_COMP_LO] = mask;
     env->features[FEAT_XSAVE_COMP_HI] = mask >> 32;
 }
