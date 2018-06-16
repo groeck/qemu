@@ -27,12 +27,14 @@
 #include "qemu/osdep.h"
 #include "qemu/units.h"
 #include "qemu/cutils.h"
+#include "qemu/option.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
 #include "hw/arm/boot.h"
 #include "hw/arm/armv7m.h"
 #include "hw/or-irq.h"
 #include "hw/boards.h"
+#include "hw/loader.h"
 #include "exec/address-spaces.h"
 #include "sysemu/sysemu.h"
 #include "hw/misc/unimp.h"
@@ -47,6 +49,8 @@
 #include "net/net.h"
 #include "hw/watchdog/cmsdk-apb-watchdog.h"
 #include "qom/object.h"
+#include "elf.h"
+#include "qemu-common.h"
 
 typedef enum MPS2FPGAType {
     FPGA_AN385,
@@ -117,6 +121,11 @@ static void make_ram_alias(MemoryRegion *mr, const char *name,
     memory_region_add_subregion(get_system_memory(), base, mr);
 }
 
+struct arm_boot_info mps2_binfo = {
+        .loader_start = 0x21000000,     /* Start of RAM */
+        .ram_size = 0x1000000,          /* RAM size     */
+};
+
 static void mps2_common_init(MachineState *machine)
 {
     MPS2MachineState *mms = MPS2_MACHINE(machine);
@@ -125,6 +134,9 @@ static void mps2_common_init(MachineState *machine)
     MachineClass *mc = MACHINE_GET_CLASS(machine);
     DeviceState *armv7m, *sccdev;
     int i;
+    AddressSpace *as;
+    CPUState *cs;
+    ARMCPU *cpu;
 
     if (strcmp(machine->cpu_type, mc->default_cpu_type) != 0) {
         error_report("This board can only be used with CPU %s",
@@ -401,8 +413,65 @@ static void mps2_common_init(MachineState *machine)
 
     system_clock_scale = NANOSECONDS_PER_SECOND / SYSCLK_FRQ;
 
-    armv7m_load_kernel(ARM_CPU(first_cpu), machine->kernel_filename,
-                       0x400000);
+    cpu = ARM_CPU(first_cpu);
+    cs = CPU(cpu);
+    as = cpu_get_address_space(cs, arm_feature(&cpu->env, ARM_FEATURE_EL3) ?
+                               ARMASIdx_S : ARMASIdx_NS);
+
+    if (bios_name) {
+        uint64_t lowaddr;
+        uint64_t entry;
+        char *filename;
+        int size;
+
+        filename = qemu_find_file(QEMU_FILE_TYPE_BIOS, bios_name);
+        if (!filename) {
+            error_report("BIOS %s not found\n", bios_name);
+            exit(1);
+        }
+
+        size = load_elf_as(filename, NULL, NULL, NULL, &entry, &lowaddr,
+                           NULL, NULL, 0, EM_ARM, 1, 0, as);
+        if (size <= 0) {
+            error_report("Failed to load %s\n", bios_name);
+            exit(1);
+        }
+    }
+
+    armv7m_load_kernel(cpu, machine->kernel_filename, 0x400000);
+
+    if (machine->initrd_filename) {
+        int image_size;
+
+        mps2_binfo.initrd_filename = machine->initrd_filename;
+        mps2_binfo.initrd_start = mps2_binfo.loader_start +
+                                    (mps2_binfo.ram_size / 2);
+
+        image_size = load_ramdisk_as(machine->initrd_filename,
+                                     mps2_binfo.initrd_start,
+                                     mps2_binfo.ram_size / 2, as);
+        if (image_size < 0) {
+            image_size = load_image_targphys_as(machine->initrd_filename,
+                                                mps2_binfo.initrd_start,
+                                                mps2_binfo.ram_size / 2, as);
+            if (image_size < 0) {
+                error_report("could not load initrd '%s'",
+                             machine->initrd_filename);
+                exit(1);
+            }
+        }
+        mps2_binfo.initrd_size = image_size;
+    }
+
+    mps2_binfo.dtb_filename = qemu_opt_get(qemu_get_machine_opts(), "dtb");
+    if (mps2_binfo.dtb_filename) {
+        mps2_binfo.dtb_start = 0x20000000; /* ZBTSRAM */
+        if (arm_load_dtb(mps2_binfo.dtb_start, &mps2_binfo, 0, as,
+			 machine) <= 0) {
+            error_report("Failed to load %s\n", mps2_binfo.dtb_filename);
+            exit(1);
+        }
+    }
 }
 
 static void mps2_class_init(ObjectClass *oc, void *data)
