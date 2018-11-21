@@ -35,6 +35,7 @@
 #include "hw/sysbus.h"
 #include "hw/char/serial.h"
 #include "target/riscv/cpu.h"
+#include "hw/riscv/boot.h"
 #include "hw/riscv/riscv_hart.h"
 #include "hw/riscv/sifive_plic.h"
 #include "hw/riscv/sifive_clint.h"
@@ -65,20 +66,7 @@ static const struct MemmapEntry {
 
 #define GEM_REVISION        0x10070109
 
-static target_ulong load_kernel(const char *kernel_filename)
-{
-    uint64_t kernel_entry, kernel_high;
-
-    if (load_elf(kernel_filename, NULL, NULL, NULL,
-                 &kernel_entry, NULL, &kernel_high,
-                 0, EM_RISCV, 1, 0) < 0) {
-        error_report("could not load kernel '%s'", kernel_filename);
-        exit(1);
-    }
-    return kernel_entry;
-}
-
-static void create_fdt(SiFiveUState *s, const struct MemmapEntry *memmap,
+static void *create_fdt(SiFiveUState *s, const struct MemmapEntry *memmap,
     uint64_t mem_size, const char *cmdline)
 {
     void *fdt;
@@ -252,6 +240,8 @@ static void create_fdt(SiFiveUState *s, const struct MemmapEntry *memmap,
         qemu_fdt_setprop_string(fdt, "/chosen", "bootargs", cmdline);
     }
     g_free(nodename);
+
+    return fdt;
 }
 
 static void riscv_sifive_u_init(MachineState *machine)
@@ -262,6 +252,8 @@ static void riscv_sifive_u_init(MachineState *machine)
     MemoryRegion *system_memory = get_system_memory();
     MemoryRegion *main_mem = g_new(MemoryRegion, 1);
     int i;
+    void *fdt;
+    hwaddr firmware_entry;
 
     /* Initialize SoC */
     object_initialize_child(OBJECT(machine), "soc", &s->soc,
@@ -277,11 +269,14 @@ static void riscv_sifive_u_init(MachineState *machine)
                                 main_mem);
 
     /* create device tree */
-    create_fdt(s, memmap, machine->ram_size, machine->kernel_cmdline);
+    fdt = create_fdt(s, memmap, machine->ram_size, machine->kernel_cmdline);
 
-    if (machine->kernel_filename) {
-        load_kernel(machine->kernel_filename);
-    }
+    /*
+     * combined firmware and kernel: -kernel bbl_vmlimux
+     * separate firmware and kernel: -bios bbl -kernel vmlinux
+     * firmware, kernel and ramdisk: -bios bbl -kernel vmlinux -initrd initramfs
+     */
+    firmware_entry = riscv_load_firmware_kernel_initrd(machine, fdt);
 
     /* reset vector */
     uint32_t reset_vec[8] = {
@@ -295,8 +290,8 @@ static void riscv_sifive_u_init(MachineState *machine)
 #endif
         0x00028067,                    /*     jr     t0 */
         0x00000000,
-        memmap[SIFIVE_U_DRAM].base, /* start: .dword DRAM_BASE */
-        0x00000000,
+        firmware_entry,
+        firmware_entry >> 32,
                                        /* dtb: */
     };
 
