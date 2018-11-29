@@ -610,7 +610,7 @@ uint64_t esp_reg_read(ESPState *s, uint32_t saddr)
            except TC */
         old_val = s->rregs[ESP_RINTR];
         s->rregs[ESP_RINTR] = 0;
-        s->rregs[ESP_RSTAT] &= ~STAT_TC;
+        // s->rregs[ESP_RSTAT] &= ~STAT_TC;
         s->rregs[ESP_RSEQ] = SEQ_CD;
         esp_lower_irq(s);
         if (s->deferred_complete) {
