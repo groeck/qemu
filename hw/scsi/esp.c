@@ -951,7 +951,7 @@ uint64_t esp_reg_read(ESPState *s, uint32_t saddr)
          */
         val = s->rregs[ESP_RINTR];
         s->rregs[ESP_RINTR] = 0;
-        s->rregs[ESP_RSTAT] &= ~STAT_TC;
+        // s->rregs[ESP_RSTAT] &= ~STAT_TC;
         /*
          * According to the datasheet ESP_RSEQ should be cleared, but as the
          * emulation currently defers information transfers to the next TI
