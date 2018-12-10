@@ -411,6 +411,7 @@ static void dump_address_map(FILE *f, fprintf_function cpu_fprintf,
     int last_attr = -1, attr = -1;
     M68kCPU *cpu = m68k_env_get_cpu(env);
     CPUState *cs = CPU(cpu);
+    MemTxResult txres;
 
     if (env->mmu.tcr & M68K_TCR_PAGE_8K) {
         /* 8k page */
@@ -424,22 +425,29 @@ static void dump_address_map(FILE *f, fprintf_function cpu_fprintf,
         tib_mask = M68K_4K_PAGE_MASK;
     }
     for (i = 0; i < M68K_ROOT_POINTER_ENTRIES; i++) {
-        tia = ldl_phys(cs->as, M68K_POINTER_BASE(root_pointer) + i * 4);
-        if (!M68K_UDT_VALID(tia)) {
+        tia = address_space_ldl(cs->as, M68K_POINTER_BASE(root_pointer) + i * 4,
+                                MEMTXATTRS_UNSPECIFIED, &txres);
+        if (txres != MEMTX_OK || !M68K_UDT_VALID(tia)) {
             continue;
         }
         for (j = 0; j < M68K_ROOT_POINTER_ENTRIES; j++) {
-            tib = ldl_phys(cs->as, M68K_POINTER_BASE(tia) + j * 4);
-            if (!M68K_UDT_VALID(tib)) {
+            tib = address_space_ldl(cs->as, M68K_POINTER_BASE(tia) + j * 4,
+                                    MEMTXATTRS_UNSPECIFIED, &txres);
+            if (txres != MEMTX_OK || !M68K_UDT_VALID(tib)) {
                 continue;
             }
             for (k = 0; k < tic_size; k++) {
-                tic = ldl_phys(cs->as, (tib & tib_mask) + k * 4);
-                if (!M68K_PDT_VALID(tic)) {
+                tic = address_space_ldl(cs->as, (tib & tib_mask) + k * 4,
+                                        MEMTXATTRS_UNSPECIFIED, &txres);
+                if (txres != MEMTX_OK || !M68K_PDT_VALID(tic)) {
                     continue;
                 }
                 if (M68K_PDT_INDIRECT(tic)) {
-                    tic = ldl_phys(cs->as, M68K_INDIRECT_POINTER(tic));
+                    tic = address_space_ldl(cs->as, M68K_INDIRECT_POINTER(tic),
+                                            MEMTXATTRS_UNSPECIFIED, &txres);
+                    if (txres != MEMTX_OK) {
+                        continue;
+                    }
                 }
 
                 last_logical = logical;
