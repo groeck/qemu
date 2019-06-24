@@ -30,6 +30,8 @@
 #include "qemu/help_option.h"
 #include "qemu/uuid.h"
 #include "sysemu/seccomp.h"
+#include <execinfo.h>
+#include <signal.h>
 
 #ifdef CONFIG_SDL
 #if defined(__APPLE__) || defined(main)
@@ -2985,6 +2987,21 @@ static void user_register_global_props(void)
                       global_init_func, NULL, NULL);
 }
 
+static void handle_signal(int sig)
+{
+	void *buffer[32];
+	int count;
+
+	fprintf(stderr, "Caught signal %d\n", sig);
+	count = backtrace(buffer, 32);
+	if (count) {
+		fprintf(stderr, "Backtrace:\n");
+		backtrace_symbols_fd(buffer, count, fileno(stderr));
+	}
+	fprintf(stderr, "\n");
+	exit(1);
+}
+
 int main(int argc, char **argv, char **envp)
 {
     int i;
@@ -3020,6 +3037,12 @@ int main(int argc, char **argv, char **envp)
     bool list_data_dirs = false;
     char *dir, **dirs;
     BlockdevOptionsQueue bdo_queue = QSIMPLEQ_HEAD_INITIALIZER(bdo_queue);
+
+    signal(SIGBUS, handle_signal);
+    signal(SIGSEGV, handle_signal);
+    signal(SIGILL, handle_signal);
+    signal(SIGABRT, handle_signal);
+    signal(SIGFPE, handle_signal);
 
     module_call_init(MODULE_INIT_TRACE);
 
