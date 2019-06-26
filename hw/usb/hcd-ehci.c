@@ -1643,6 +1643,9 @@ static EHCIQueue *ehci_state_fetchqh(EHCIState *ehci, int async)
     if (q->dev == NULL) {
         q->dev = ehci_find_device(q->ehci,
                                   get_field(q->qh.epchar, QH_EPCHAR_DEVADDR));
+	if (!q->dev) {
+                ehci_trace_guest_bug(q->ehci, "no device found, q->dev==NULL");
+	}
     }
 
     if (async && (q->qh.epchar & QH_EPCHAR_H)) {
