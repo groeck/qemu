@@ -32,6 +32,7 @@
 #include "sysemu/seccomp.h"
 #include <execinfo.h>
 #include <signal.h>
+#include <dlfcn.h>
 
 #ifdef CONFIG_SDL
 #if defined(__APPLE__) || defined(main)
@@ -2989,16 +2990,27 @@ static void user_register_global_props(void)
 
 static void handle_signal(int sig)
 {
-	void *buffer[32];
-	int count;
+	void *buffer[100];
+	char **strings;
+	int i, count;
+	Dl_info info;
 
 	fprintf(stderr, "Caught signal %d\n", sig);
-	count = backtrace(buffer, 32);
-	if (count) {
-		fprintf(stderr, "Backtrace:\n");
-		backtrace_symbols_fd(buffer, count, fileno(stderr));
+	count = backtrace(buffer, 100);
+
+	strings = backtrace_symbols(buffer, count);
+	if (!strings) {
+	    perror("backtrace_symbols");
+	    exit(1);
 	}
-	fprintf(stderr, "\n");
+	fprintf(stderr, "Backtrace:\n");
+	for (i = 0; i < count; i++) {
+	    fprintf(stderr, "%s\n", strings[i]);
+	    if (dladdr(buffer[i], &info) && info.dli_fname) {
+		fprintf(stderr, "  (%s [0x%lx])\n", info.dli_fname,
+			(unsigned long)info.dli_saddr);
+	    }
+	}
 	exit(1);
 }
 
