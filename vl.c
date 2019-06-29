@@ -3012,7 +3012,7 @@ static void handle_signal(int sig)
 			(unsigned long)info.dli_saddr);
 	    }
 	}
-	exit(1);
+	raise(SIGSEGV);
 }
 
 int main(int argc, char **argv, char **envp)
@@ -3051,11 +3051,11 @@ int main(int argc, char **argv, char **envp)
     char *dir, **dirs;
     BlockdevOptionsQueue bdo_queue = QSIMPLEQ_HEAD_INITIALIZER(bdo_queue);
 
-    signal(SIGBUS, handle_signal);
+    /* signal(SIGBUS, handle_signal);
     signal(SIGSEGV, handle_signal);
     signal(SIGILL, handle_signal);
+    signal(SIGFPE, handle_signal); */
     signal(SIGABRT, handle_signal);
-    signal(SIGFPE, handle_signal);
 
     module_call_init(MODULE_INIT_TRACE);
 
