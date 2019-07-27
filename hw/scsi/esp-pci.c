@@ -86,7 +86,8 @@ static void esp_pci_handle_idle(PCIESPState *pci, uint32_t val)
 static void esp_pci_handle_blast(PCIESPState *pci, uint32_t val)
 {
     trace_esp_pci_dma_blast(val);
-    qemu_log_mask(LOG_UNIMP, "am53c974: cmd BLAST not implemented\n");
+    /* Just assume that we are done. */
+    pci->dma_regs[DMA_STAT] |= DMA_STAT_BCMBLT;
 }
 
 static void esp_pci_handle_abort(PCIESPState *pci, uint32_t val)
