@@ -97,9 +97,9 @@ static void bcm2835_peripherals_init(Object *obj)
                                    OBJECT(&s->gpu_bus_mr), &error_abort);
 
     /* Clock subsystem */
-    object_initialize(&s->cprman, sizeof(s->cprman), TYPE_BCM2835_CPRMAN);
-    object_property_add_child(obj, "cprman", OBJECT(&s->cprman), NULL);
-    qdev_set_parent_bus(DEVICE(&s->cprman), sysbus_get_default());
+    object_initialize(&s->cm, sizeof(s->cm), TYPE_BCM2835_CM);
+    object_property_add_child(obj, "cm", OBJECT(&s->cm), NULL);
+    qdev_set_parent_bus(DEVICE(&s->cm), sysbus_get_default());
 
     /* Random Number Generator */
     sysbus_init_child_obj(obj, "rng", &s->rng, sizeof(s->rng),
@@ -273,7 +273,7 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
                       qdev_get_gpio_in(DEVICE(&s->mboxes), MBOX_CHAN_PROPERTY));
 
     /* Clock subsystem */
-    object_property_set_bool(OBJECT(&s->cprman), true, "realized", &err);
+    object_property_set_bool(OBJECT(&s->cm), true, "realized", &err);
     if (err) {
         error_propagate(errp, err);
         return;
@@ -287,7 +287,7 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
     }
 
     memory_region_add_subregion(&s->peri_mr, CM_OFFSET,
-                sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->cprman), 0));
+                sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->cm), 0));
 
     memory_region_add_subregion(&s->peri_mr, RNG_OFFSET,
                 sysbus_mmio_get_region(SYS_BUS_DEVICE(&s->rng), 0));
