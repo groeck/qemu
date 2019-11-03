@@ -11,18 +11,18 @@
 #include "qemu/log.h"
 #include "qapi/error.h"
 #include "crypto/random.h"
-#include "hw/misc/bcm2835_cprman.h"
+#include "hw/misc/bcm2835_cm.h"
 #include "migration/vmstate.h"
 
-static uint64_t bcm2835_cprman_read(void *opaque, hwaddr offset,
+static uint64_t bcm2835_cm_read(void *opaque, hwaddr offset,
                                  unsigned size)
 {
-    BCM2835CprmanState *s = (BCM2835CprmanState *)opaque;
+    BCM2835CmState *s = (BCM2835CmState *)opaque;
     uint32_t res = 0;
 
     assert(size == 4);
 
-    if (offset / 4 < CPRMAN_NUM_REGS) {
+    if (offset / 4 < CM_NUM_REGS) {
         res = s->regs[offset / 4];
     }
 
@@ -32,40 +32,40 @@ static uint64_t bcm2835_cprman_read(void *opaque, hwaddr offset,
 #define CM_PASSWORD             0x5a000000
 #define CM_PASSWORD_MASK        0xff000000
 
-static void bcm2835_cprman_write(void *opaque, hwaddr offset,
+static void bcm2835_cm_write(void *opaque, hwaddr offset,
                               uint64_t value, unsigned size)
 {
-    BCM2835CprmanState *s = (BCM2835CprmanState *)opaque;
+    BCM2835CmState *s = (BCM2835CmState *)opaque;
 
     assert(size == 4);
 
     if ((value & 0xff000000) == CM_PASSWORD &&
-        offset / 4 < CPRMAN_NUM_REGS)
+        offset / 4 < CM_NUM_REGS)
             s->regs[offset / 4] = value & ~CM_PASSWORD_MASK;
 }
 
-static const MemoryRegionOps bcm2835_cprman_ops = {
-    .read = bcm2835_cprman_read,
-    .write = bcm2835_cprman_write,
+static const MemoryRegionOps bcm2835_cm_ops = {
+    .read = bcm2835_cm_read,
+    .write = bcm2835_cm_write,
     .endianness = DEVICE_NATIVE_ENDIAN,
 };
 
-static const VMStateDescription vmstate_bcm2835_cprman = {
-    .name = TYPE_BCM2835_CPRMAN,
+static const VMStateDescription vmstate_bcm2835_cm = {
+    .name = TYPE_BCM2835_CM,
     .version_id = 1,
     .minimum_version_id = 1,
     .fields = (VMStateField[]) {
-        VMSTATE_UINT32_ARRAY(regs, BCM2835CprmanState, CPRMAN_NUM_REGS),
+        VMSTATE_UINT32_ARRAY(regs, BCM2835CmState, CM_NUM_REGS),
         VMSTATE_END_OF_LIST()
     }
 };
 
-static void bcm2835_cprman_init(Object *obj)
+static void bcm2835_cm_init(Object *obj)
 {
-    BCM2835CprmanState *s = BCM2835_CPRMAN(obj);
+    BCM2835CmState *s = BCM2835_CM(obj);
 
-    memory_region_init_io(&s->iomem, obj, &bcm2835_cprman_ops, s,
-                          TYPE_BCM2835_CPRMAN, 0x2000);
+    memory_region_init_io(&s->iomem, obj, &bcm2835_cm_ops, s,
+                          TYPE_BCM2835_CM, 0x2000);
     sysbus_init_mmio(SYS_BUS_DEVICE(s), &s->iomem);
 }
 
@@ -79,13 +79,13 @@ static void bcm2835_cprman_init(Object *obj)
 #define A2W_PLLA_CTRL   (0x1100 / 4)
 #define A2W_PLLB_CTRL   (0x11e0 / 4)
 
-static void bcm2835_cprman_reset(DeviceState *dev)
+static void bcm2835_cm_reset(DeviceState *dev)
 {
-    BCM2835CprmanState *s = BCM2835_CPRMAN(dev);
+    BCM2835CmState *s = BCM2835_CM(dev);
     int i;
 
     /*
-     * Available information suggests that CPRMAN registers have default
+     * Available information suggests that CM registers have default
      * values which are not overwritten by ROMMON (u-boot). The hardware
      * default values are unknown at this time.
      * The default values selected here are necessary and sufficient
@@ -111,25 +111,25 @@ static void bcm2835_cprman_reset(DeviceState *dev)
     }
 }
 
-static void bcm2835_cprman_class_init(ObjectClass *klass, void *data)
+static void bcm2835_cm_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
 
-    dc->reset = bcm2835_cprman_reset;
-    dc->vmsd = &vmstate_bcm2835_cprman;
+    dc->reset = bcm2835_cm_reset;
+    dc->vmsd = &vmstate_bcm2835_cm;
 }
 
-static TypeInfo bcm2835_cprman_info = {
-    .name          = TYPE_BCM2835_CPRMAN,
+static TypeInfo bcm2835_cm_info = {
+    .name          = TYPE_BCM2835_CM,
     .parent        = TYPE_SYS_BUS_DEVICE,
-    .instance_size = sizeof(BCM2835CprmanState),
-    .class_init    = bcm2835_cprman_class_init,
-    .instance_init = bcm2835_cprman_init,
+    .instance_size = sizeof(BCM2835CmState),
+    .class_init    = bcm2835_cm_class_init,
+    .instance_init = bcm2835_cm_init,
 };
 
-static void bcm2835_cprman_register_types(void)
+static void bcm2835_cm_register_types(void)
 {
-    type_register_static(&bcm2835_cprman_info);
+    type_register_static(&bcm2835_cm_info);
 }
 
-type_init(bcm2835_cprman_register_types)
+type_init(bcm2835_cm_register_types)
