@@ -157,6 +157,7 @@ static void chipidea_class_init(ObjectClass *klass, void *data)
     sec->capsbase   = 0x100;
     sec->opregbase  = 0x140;
     sec->portnr     = 1;
+    sec->power_control = true;
 
     set_bit(DEVICE_CATEGORY_USB, dc->categories);
     dc->desc = "Chipidea USB Module";
