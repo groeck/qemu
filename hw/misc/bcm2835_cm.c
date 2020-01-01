@@ -71,6 +71,7 @@ static void bcm2835_cm_init(Object *obj)
 
 #define CM_GNRICCTL     (0x000 / 4)
 #define CM_VECCTL       (0x0f8 / 4)
+#define CM_LOCK         (0x114 / 4)
 #define CM_DSI1ECTL     (0x158 / 4)
 #define CM_DFTCTL       (0x168 / 4)
 #define CM_PULSECTL     (0x190 / 4)
@@ -109,6 +110,8 @@ static void bcm2835_cm_reset(DeviceState *dev)
     for (i = A2W_PLLA_CTRL; i <= A2W_PLLB_CTRL; i += 8) {
         s->regs[i] = 0x10001;   /* bit 16: power down, bit 0..9: ndiv */
     }
+
+    s->regs[CM_LOCK] = 0x1f00;  /* set all lock bits */
 }
 
 static void bcm2835_cm_class_init(ObjectClass *klass, void *data)
