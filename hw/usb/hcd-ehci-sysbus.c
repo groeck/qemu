@@ -64,6 +64,7 @@ static void ehci_sysbus_init(Object *obj)
     SysBusEHCIClass *sec = SYS_BUS_EHCI_GET_CLASS(obj);
     EHCIState *s = &i->ehci;
 
+    s->power_control = sec->power_control;
     s->capsbase = sec->capsbase;
     s->opregbase = sec->opregbase;
     s->portscbase = sec->portscbase;
