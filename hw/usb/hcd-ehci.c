@@ -2564,6 +2564,9 @@ void usb_ehci_init(EHCIState *s, DeviceState *dev)
     s->caps[0x02] = 0x00;
     s->caps[0x03] = 0x01;        /* HC version */
     s->caps[0x04] = s->portnr;   /* Number of downstream ports */
+    if (s->power_control) {
+        s->caps[0x04] |= 0x10;   /* power control supported */
+    }
     s->caps[0x05] = 0x00;        /* No companion ports at present */
     s->caps[0x06] = 0x00;
     s->caps[0x07] = 0x00;
