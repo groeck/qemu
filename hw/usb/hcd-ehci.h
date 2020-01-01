@@ -262,6 +262,7 @@ struct EHCIState {
     MemoryRegion mem_ports;
     int companion_count;
     bool companion_enable;
+    bool power_control;
     uint16_t capsbase;
     uint16_t opregbase;
     uint16_t portscbase;
@@ -368,6 +369,7 @@ struct SysBusEHCIClass {
     uint16_t opregbase;
     uint16_t portscbase;
     uint16_t portnr;
+    bool power_control;
 };
 
 OBJECT_DECLARE_SIMPLE_TYPE(FUSBH200EHCIState, FUSBH200_EHCI)
