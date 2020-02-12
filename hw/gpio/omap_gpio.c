@@ -77,7 +77,7 @@ static uint64_t omap_gpio_read(void *opaque, hwaddr addr,
     struct omap_gpio_s *s = (struct omap_gpio_s *) opaque;
     int offset = addr & OMAP_MPUI_REG_MASK;
 
-    if (size != 2) {
+    if (size < 2) {
         return omap_badwidth_read16(opaque, addr);
     }
 
@@ -117,10 +117,11 @@ static void omap_gpio_write(void *opaque, hwaddr addr,
     uint16_t diff;
     int ln;
 
-    if (size != 2) {
+    if (size < 2) {
         omap_badwidth_write16(opaque, addr, value);
         return;
     }
+    value &= 0xffff;
 
     switch (offset) {
     case 0x00:	/* DATA_INPUT */
