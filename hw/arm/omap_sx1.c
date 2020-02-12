@@ -104,7 +104,6 @@ static void sx1_init(MachineState *machine, const int version)
     struct omap_mpu_state_s *mpu;
     MemoryRegion *address_space = get_system_memory();
     MemoryRegion *dram = g_new(MemoryRegion, 1);
-    MemoryRegion *flash = g_new(MemoryRegion, 1);
     MemoryRegion *cs = g_new(MemoryRegion, 4);
     static uint32_t cs0val = 0x00213090;
     static uint32_t cs1val = 0x00215070;
@@ -126,16 +125,10 @@ static void sx1_init(MachineState *machine, const int version)
     mpu = omap310_mpu_init(dram, machine->cpu_type);
 
     /* External Flash (EMIFS) */
-    memory_region_init_ram(flash, NULL, "omap_sx1.flash0-0", flash_size,
-                           &error_fatal);
-    memory_region_set_readonly(flash, true);
-    memory_region_add_subregion(address_space, OMAP_CS0_BASE, flash);
-
     memory_region_init_io(&cs[0], NULL, &static_ops, &cs0val,
                           "sx1.cs0", OMAP_CS0_SIZE - flash_size);
     memory_region_add_subregion(address_space,
                                 OMAP_CS0_BASE + flash_size, &cs[0]);
-
 
     memory_region_init_io(&cs[2], NULL, &static_ops, &cs2val,
                           "sx1.cs2", OMAP_CS2_SIZE);
@@ -156,7 +149,7 @@ static void sx1_init(MachineState *machine, const int version)
 
     if ((dinfo = drive_get(IF_PFLASH, 0, fl_idx)) != NULL) {
         if (!pflash_cfi01_register(OMAP_CS0_BASE,
-                                   "omap_sx1.flash0-1", flash_size,
+                                   "omap_sx1.flash0", flash_size,
                                    blk_by_legacy_dinfo(dinfo),
                                    sector_size, 4, 0, 0, 0, 0, be)) {
             fprintf(stderr, "qemu: Error registering flash memory %d.\n",
@@ -167,19 +160,13 @@ static void sx1_init(MachineState *machine, const int version)
 
     if ((version == 1) &&
             (dinfo = drive_get(IF_PFLASH, 0, fl_idx)) != NULL) {
-        MemoryRegion *flash_1 = g_new(MemoryRegion, 1);
-        memory_region_init_ram(flash_1, NULL, "omap_sx1.flash1-0",
-                               flash1_size, &error_fatal);
-        memory_region_set_readonly(flash_1, true);
-        memory_region_add_subregion(address_space, OMAP_CS1_BASE, flash_1);
-
         memory_region_init_io(&cs[1], NULL, &static_ops, &cs1val,
                               "sx1.cs1", OMAP_CS1_SIZE - flash1_size);
         memory_region_add_subregion(address_space,
                                 OMAP_CS1_BASE + flash1_size, &cs[1]);
 
         if (!pflash_cfi01_register(OMAP_CS1_BASE,
-                                   "omap_sx1.flash1-1", flash1_size,
+                                   "omap_sx1.flash1", flash1_size,
                                    blk_by_legacy_dinfo(dinfo),
                                    sector_size, 4, 0, 0, 0, 0, be)) {
             fprintf(stderr, "qemu: Error registering flash memory %d.\n",
