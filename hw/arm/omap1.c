@@ -535,7 +535,7 @@ static uint64_t omap_ulpd_pm_read(void *opaque, hwaddr addr,
     struct omap_mpu_state_s *s = (struct omap_mpu_state_s *) opaque;
     uint16_t ret;
 
-    if (size != 2) {
+    if (size < 2) {
         return omap_badwidth_read16(opaque, addr);
     }
 
@@ -606,10 +606,11 @@ static void omap_ulpd_pm_write(void *opaque, hwaddr addr,
     static const int bypass_div[4] = { 1, 2, 4, 4 };
     uint16_t diff;
 
-    if (size != 2) {
+    if (size < 2) {
         omap_badwidth_write16(opaque, addr, value);
         return;
     }
+    value &= 0xffff;
 
     switch (addr) {
     case 0x00:	/* COUNTER_32_LSB */
@@ -1952,7 +1953,7 @@ static uint64_t omap_mpuio_read(void *opaque, hwaddr addr,
     int offset = addr & OMAP_MPUI_REG_MASK;
     uint16_t ret;
 
-    if (size != 2) {
+    if (size < 2) {
         return omap_badwidth_read16(opaque, addr);
     }
 
@@ -2013,10 +2014,11 @@ static void omap_mpuio_write(void *opaque, hwaddr addr,
     uint16_t diff;
     int ln;
 
-    if (size != 2) {
+    if (size < 2) {
         omap_badwidth_write16(opaque, addr, value);
         return;
     }
+    value &= 0xffff;
 
     switch (offset) {
     case 0x04:	/* OUTPUT_REG */
