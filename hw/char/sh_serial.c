@@ -353,12 +353,6 @@ static void sh_serial_receive1(void *opaque, const uint8_t *buf, int size)
                 }
             }
         }
-        if (!(s->flags & SH_SERIAL_FLAG_RDF) && s->rx_cnt) {
-            s->flags |= SH_SERIAL_FLAG_DR;
-            if (s->scr & (1 << 6) && s->rxi) {
-                qemu_set_irq(s->rxi, 1);
-            }
-        }
     } else {
         s->rx_fifo[0] = buf[0];
     }
