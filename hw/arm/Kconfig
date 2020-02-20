@@ -351,6 +351,7 @@ config FSL_IMX6
     select IMX_FEC
     select IMX_I2C
     select SDHCI
+    select STMP
 
 config ASPEED_SOC
     bool
