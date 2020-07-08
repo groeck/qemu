@@ -106,23 +106,23 @@ static void tmp105_read(TMP105State *s)
 
     switch (s->pointer & 3) {
     case TMP105_REG_TEMPERATURE:
-        s->buf[s->len ++] = (((uint16_t) s->temperature) >> 8);
-        s->buf[s->len ++] = (((uint16_t) s->temperature) >> 0) &
+        s->buf[s->len++] = (((uint16_t) s->temperature) >> 8);
+        s->buf[s->len++] = (((uint16_t) s->temperature) >> 0) &
                 (0xf0 << ((~s->config >> 5) & 3));		/* R */
         break;
 
     case TMP105_REG_CONFIG:
-        s->buf[s->len ++] = s->config;
+        s->buf[s->len++] = s->config;
         break;
 
     case TMP105_REG_T_LOW:
-        s->buf[s->len ++] = ((uint16_t) s->limit[0]) >> 8;
-        s->buf[s->len ++] = ((uint16_t) s->limit[0]) >> 0;
+        s->buf[s->len++] = ((uint16_t) s->limit[0]) >> 8;
+        s->buf[s->len++] = ((uint16_t) s->limit[0]) >> 0;
         break;
 
     case TMP105_REG_T_HIGH:
-        s->buf[s->len ++] = ((uint16_t) s->limit[1]) >> 8;
-        s->buf[s->len ++] = ((uint16_t) s->limit[1]) >> 0;
+        s->buf[s->len++] = ((uint16_t) s->limit[1]) >> 8;
+        s->buf[s->len++] = ((uint16_t) s->limit[1]) >> 0;
         break;
     }
 }
@@ -156,7 +156,7 @@ static uint8_t tmp105_rx(I2CSlave *i2c)
     TMP105State *s = TMP105(i2c);
 
     if (s->len < 2) {
-        return s->buf[s->len ++];
+        return s->buf[s->len++];
     } else {
         return 0xff;
     }
