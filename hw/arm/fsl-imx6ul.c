@@ -543,6 +543,11 @@ static void fsl_imx6ul_realize(DeviceState *dev, Error **errp)
     create_unimplemented_device("pwm4", FSL_IMX6UL_PWM4_ADDR, 0x4000);
 
     /*
+     * ASRC
+     */
+    create_unimplemented_device("asrc", FSL_IMX6UL_ASRC_ADDR, 0x4000);
+
+    /*
      * CAN
      */
     create_unimplemented_device("can1", FSL_IMX6UL_CAN1_ADDR, 0x4000);
