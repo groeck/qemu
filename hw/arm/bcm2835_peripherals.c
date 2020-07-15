@@ -248,9 +248,7 @@ static void bcm2835_peripherals_realize(DeviceState *dev, Error **errp)
                       qdev_get_gpio_in(DEVICE(&s->mboxes), MBOX_CHAN_PROPERTY));
 
     /* Clock subsystem */
-    object_property_set_bool(OBJECT(&s->cm), true, "realized", &err);
-    if (err) {
-        error_propagate(errp, err);
+    if (!object_property_set_bool(OBJECT(&s->cm), "realized", true, errp)) {
         return;
     }
 
