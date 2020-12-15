@@ -54,7 +54,6 @@ arm_softmmu_ss.add(files(
   'machine.c',
   'monitor.c',
   'psci.c',
-  'smc.c',
 ))
 
 target_arch += {'arm': arm_ss}
