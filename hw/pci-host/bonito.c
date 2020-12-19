@@ -632,7 +632,7 @@ static void bonito_pcihost_realize(DeviceState *dev, Error **errp)
 {
     PCIHostState *phb = PCI_HOST_BRIDGE(dev);
     BonitoState *bs = BONITO_PCI_HOST_BRIDGE(dev);
-    MemoryRegion *pcimem_lo_alias = g_new(MemoryRegion, 3);
+    MemoryRegion *pcimem_lo_alias = g_new(MemoryRegion, 1);
 
     memory_region_init(&bs->pci_mem, OBJECT(dev), "pci.mem", BONITO_PCIHI_SIZE);
     phb->bus = pci_register_root_bus(dev, "pci",
@@ -640,16 +640,11 @@ static void bonito_pcihost_realize(DeviceState *dev, Error **errp)
                                      dev, &bs->pci_mem, get_system_io(),
                                      PCI_DEVFN(5, 0), 32, TYPE_PCI_BUS);
 
-    for (size_t i = 0; i < 3; i++) {
-        char *name = g_strdup_printf("pci.lomem%zu", i);
-
-        memory_region_init_alias(&pcimem_lo_alias[i], NULL, name,
-                                 &bs->pci_mem, i * 64 * MiB, 64 * MiB);
-        memory_region_add_subregion(get_system_memory(),
-                                    BONITO_PCILO_BASE + i * 64 * MiB,
-                                    &pcimem_lo_alias[i]);
-        g_free(name);
-    }
+    memory_region_init_alias(pcimem_lo_alias, OBJECT(dev), "pci.lomem",
+                             &bs->pci_mem, BONITO_PCILO_BASE,
+                             BONITO_PCILO_SIZE);
+    memory_region_add_subregion(get_system_memory(), BONITO_PCILO_BASE,
+                                pcimem_lo_alias);
 
     create_unimplemented_device("pci.io", BONITO_PCIIO_BASE, 1 * MiB);
 }
