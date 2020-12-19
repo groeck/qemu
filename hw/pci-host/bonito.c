@@ -546,19 +546,16 @@ static const MemoryRegionOps bonito_spciconf_ops = {
     .endianness = DEVICE_NATIVE_ENDIAN,
 };
 
-#define BONITO_IRQ_BASE 32
-
 static void pci_bonito_set_irq(void *opaque, int irq_num, int level)
 {
     BonitoState *s = opaque;
     qemu_irq *pic = s->pic;
     PCIBonitoState *bonito_state = s->pci_dev;
-    int internal_irq = irq_num - BONITO_IRQ_BASE;
 
-    if (bonito_state->regs[BONITO_INTEDGE] & (1 << internal_irq)) {
+    if (bonito_state->regs[BONITO_INTEDGE] & (1 << irq_num)) {
         qemu_irq_pulse(*pic);
     } else {   /* level triggered */
-        if (bonito_state->regs[BONITO_INTPOL] & (1 << internal_irq)) {
+        if (bonito_state->regs[BONITO_INTPOL] & (1 << irq_num)) {
             qemu_irq_raise(*pic);
         } else {
             qemu_irq_lower(*pic);
@@ -566,25 +563,10 @@ static void pci_bonito_set_irq(void *opaque, int irq_num, int level)
     }
 }
 
-/* map the original irq (0~3) to bonito irq (16~47, but 16~31 are unused) */
-static int pci_bonito_map_irq(PCIDevice *pci_dev, int irq_num)
+/* PCI slots IRQ pins started from 25 */
+static int pci_bonito_map_irq(PCIDevice *pci_dev, int pin)
 {
-    int slot;
-
-    slot = (pci_dev->devfn >> 3);
-
-    switch (slot) {
-    case 5:   /* FULOONG2E_VIA_SLOT, SouthBridge, IDE, USB, ACPI, AC97, MC97 */
-        return irq_num % 4 + BONITO_IRQ_BASE;
-    case 6:   /* FULOONG2E_ATI_SLOT, VGA */
-        return 4 + BONITO_IRQ_BASE;
-    case 7:   /* FULOONG2E_RTL_SLOT, RTL8139 */
-        return 5 + BONITO_IRQ_BASE;
-    case 8 ... 12: /* PCI slot 1 to 4 */
-        return (slot - 8 + irq_num) + 6 + BONITO_IRQ_BASE;
-    default:  /* Unknown device, don't do any translation */
-        return irq_num;
-    }
+    return 25 + pin;
 }
 
 static void bonito_reset(void *opaque)
