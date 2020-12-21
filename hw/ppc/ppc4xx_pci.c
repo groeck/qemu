@@ -247,7 +247,7 @@ static int ppc4xx_pci_map_irq(PCIDevice *pci_dev, int irq_num)
 
     trace_ppc4xx_pci_map_irq(pci_dev->devfn, irq_num, slot);
 
-    return slot - 1;
+    return slot ? slot - 1 : slot;
 }
 
 static void ppc4xx_pci_set_irq(void *opaque, int irq_num, int level)
