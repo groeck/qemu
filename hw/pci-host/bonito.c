@@ -631,7 +631,7 @@ static void bonito_pcihost_realize(DeviceState *dev, Error **errp)
     phb->bus = pci_register_root_bus(dev, "pci",
                                      pci_bonito_set_irq, pci_bonito_map_irq,
                                      dev, &bs->pci_mem, get_system_io(),
-                                     PCI_DEVFN(5, 0), 32, TYPE_PCI_BUS);
+                                     PCI_DEVFN(5, 0), 48, TYPE_PCI_BUS);
 
     memory_region_init_alias(pcimem_lo_alias, OBJECT(dev), "pci.lomem",
                              &bs->pci_mem, BONITO_PCILO_BASE,
