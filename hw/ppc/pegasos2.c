@@ -34,6 +34,7 @@
 #include "trace.h"
 #include "qemu/datadir.h"
 #include "sysemu/device_tree.h"
+#include "sysemu/runstate.h"
 #include "hw/ppc/vof.h"
 
 #include <libfdt.h>
@@ -401,6 +402,12 @@ static target_ulong pegasos2_rtas(PowerPCCPU *cpu, Pegasos2MachineState *pm,
         }
         qemu_log_mask(LOG_UNIMP, "%c", ldl_be_phys(as, args));
         stl_be_phys(as, rets, 0);
+        return H_SUCCESS;
+    case RTAS_POWER_OFF:
+        qemu_system_powerdown_request();
+        return H_SUCCESS;
+    case RTAS_SYSTEM_REBOOT:
+        qemu_system_reset_request(SHUTDOWN_CAUSE_GUEST_RESET);
         return H_SUCCESS;
     default:
         qemu_log_mask(LOG_UNIMP, "Unknown RTAS token %u (args=%u, rets=%u)\n",
