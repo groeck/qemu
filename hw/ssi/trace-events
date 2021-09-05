@@ -27,3 +27,17 @@ ibex_spi_host_reset(const char *msg) "%s"
 ibex_spi_host_transfer(uint32_t tx_data, uint32_t rx_data) "tx_data: 0x%" PRIx32 " rx_data: @0x%" PRIx32
 ibex_spi_host_write(uint64_t addr, uint32_t size, uint64_t data) "@0x%" PRIx64 " size %u: 0x%" PRIx64
 ibex_spi_host_read(uint64_t addr, uint32_t size) "@0x%" PRIx64 " size %u:"
+
+# imx_spi.c
+
+imx_spi_read(const char *reg, uint32_t value) "reg[%s] => 0x%08" PRIx32
+imx_spi_write(const char *reg, uint64_t value) "reg[%s] <= 0x%08" PRIx64
+imx_spi_update_irq(int level) "IRQ level is %d"
+imx_spi_cs(int channel, int level) "spi%d: cs:=%d"
+imx_spi_flush_txfifo_begin(int tx, int rx) "Begin: TX Fifo Size = %d, RX Fifo Size = %d"
+imx_spi_burst_length(int length) "Burst length = %d"
+imx_spi_tx_data(uint32_t data) "data tx:0x%08" PRIx32
+imx_spi_write_byte(uint8_t data) "spi tx byte 0x%02" PRIx8
+imx_spi_read_byte(uint8_t data) "spi rx byte 0x%02" PRIx8
+imx_spi_rx_data(uint32_t data) "data rx:0x%08" PRIx32
+imx_spi_flush_txfifo_end(int tx, int rx) "End: TX Fifo Size = %d, RX Fifo Size = %d"
