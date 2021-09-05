@@ -53,3 +53,17 @@ pnv_spi_rx_read_N2frame(void) ""
 pnv_spi_shift_rx(uint8_t byte, uint32_t index) "byte = 0x%2.2x into RDR from payload index %d"
 pnv_spi_sequencer_stop_requested(const char* reason) "due to %s"
 pnv_spi_RDR_match(const char* result) "%s"
+
+# imx_spi.c
+
+imx_spi_read(const char *reg, uint32_t value) "reg[%s] => 0x%08" PRIx32
+imx_spi_write(const char *reg, uint64_t value) "reg[%s] <= 0x%08" PRIx64
+imx_spi_update_irq(int level) "IRQ level is %d"
+imx_spi_cs(int channel, int level) "spi%d: cs:=%d"
+imx_spi_flush_txfifo_begin(int tx, int rx) "Begin: TX Fifo Size = %d, RX Fifo Size = %d"
+imx_spi_burst_length(int length) "Burst length = %d"
+imx_spi_tx_data(uint32_t data) "data tx:0x%08" PRIx32
+imx_spi_write_byte(uint8_t data) "spi tx byte 0x%02" PRIx8
+imx_spi_read_byte(uint8_t data) "spi rx byte 0x%02" PRIx8
+imx_spi_rx_data(uint32_t data) "data rx:0x%08" PRIx32
+imx_spi_flush_txfifo_end(int tx, int rx) "End: TX Fifo Size = %d, RX Fifo Size = %d"
