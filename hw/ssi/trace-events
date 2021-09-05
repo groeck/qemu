@@ -20,3 +20,17 @@ npcm7xx_fiu_ctrl_read(const char *id, uint64_t addr, uint32_t data) "%s offset: 
 npcm7xx_fiu_ctrl_write(const char *id, uint64_t addr, uint32_t data) "%s offset: 0x%04" PRIx64 " value: 0x%08" PRIx32
 npcm7xx_fiu_flash_read(const char *id, int cs, uint64_t addr, unsigned int size, uint64_t value) "%s[%d] offset: 0x%08" PRIx64 " size: %u value: 0x%" PRIx64
 npcm7xx_fiu_flash_write(const char *id, unsigned cs, uint64_t addr, unsigned int size, uint64_t value) "%s[%d] offset: 0x%08" PRIx64 " size: %u value: 0x%" PRIx64
+
+# imx_spi.c
+
+imx_spi_read(const char *reg, uint32_t value) "reg[%s] => 0x%" PRIx32
+imx_spi_write(const char *reg, uint64_t value) "reg[%s] <= 0x%" PRIx64
+imx_spi_update_irq(int level) "IRQ level is %d"
+imx_spi_cs(int channel, int level) "spi%d: cs:=%d"
+imx_spi_flush_txfifo_begin(int tx, int rx) "Begin: TX Fifo Size = %d, RX Fifo Size = %d"
+imx_spi_burst_length(int length) "Burst length = %d"
+imx_spi_tx_data(uint32_t data) "data tx:0x%08" PRIx32
+imx_spi_write_byte(uint32_t data) "spi tx byte 0x%02" PRIx32
+imx_spi_read_byte(uint32_t data) "spi rx byte 0x%02" PRIx32
+imx_spi_rx_data(uint32_t data) "data rx:0x%08" PRIx32
+imx_spi_flush_txfifo_end(int tx, int rx) "End: TX Fifo Size = %d, RX Fifo Size = %d"
