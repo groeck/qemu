@@ -14,18 +14,7 @@
 #include "migration/vmstate.h"
 #include "qemu/log.h"
 #include "qemu/module.h"
-
-#ifndef DEBUG_IMX_SPI
-#define DEBUG_IMX_SPI 0
-#endif
-
-#define DPRINTF(fmt, args...) \
-    do { \
-        if (DEBUG_IMX_SPI) { \
-            fprintf(stderr, "[%s]%s: " fmt , TYPE_IMX_SPI, \
-                                             __func__, ##args); \
-        } \
-    } while (0)
+#include "trace.h"
 
 static const char *imx_spi_reg_name(uint32_t reg)
 {
@@ -117,8 +106,7 @@ static void imx_spi_update_irq(IMXSPIState *s)
     level = s->regs[ECSPI_STATREG] & s->regs[ECSPI_INTREG] ? 1 : 0;
 
     qemu_set_irq(s->irq, level);
-
-    DPRINTF("IRQ level is %d\n", level);
+    trace_imx_spi_update_irq(level);
 }
 
 static uint8_t imx_spi_selected_channel(IMXSPIState *s)
@@ -164,9 +152,10 @@ static void imx_spi_flush_txfifo(IMXSPIState *s)
     uint32_t tx;
     uint32_t rx;
 
-    DPRINTF("Begin: TX Fifo Size = %d, RX Fifo Size = %d\n",
-            fifo32_num_used(&s->tx_fifo), fifo32_num_used(&s->rx_fifo));
+    trace_imx_spi_flush_txfifo_begin(fifo32_num_used(&s->tx_fifo),
+                                     fifo32_num_used(&s->rx_fifo));
 
+    trace_imx_spi_cs(imx_spi_selected_channel(s), 0);
     qemu_set_irq(s->cs_lines[imx_spi_selected_channel(s)], 0);
 
     while (!fifo32_is_empty(&s->tx_fifo)) {
@@ -175,7 +164,7 @@ static void imx_spi_flush_txfifo(IMXSPIState *s)
         if (s->burst_length <= 0) {
             s->burst_length = imx_spi_burst_length(s);
 
-            DPRINTF("Burst length = %d\n", s->burst_length);
+            trace_imx_spi_burst_length(s->burst_length);
 
             if (imx_spi_is_multiple_master_burst(s)) {
                 s->regs[ECSPI_CONREG] |= ECSPI_CONREG_XCH;
@@ -184,7 +173,7 @@ static void imx_spi_flush_txfifo(IMXSPIState *s)
 
         tx = fifo32_pop(&s->tx_fifo);
 
-        DPRINTF("data tx:0x%08x\n", tx);
+        trace_imx_spi_tx_data(tx);
 
         tx_burst = (s->burst_length % 32) ? : 32;
 
@@ -193,12 +182,12 @@ static void imx_spi_flush_txfifo(IMXSPIState *s)
         while (tx_burst > 0) {
             uint8_t byte = tx >> (tx_burst - 8);
 
-            DPRINTF("writing 0x%02x\n", (uint32_t)byte);
+            trace_imx_spi_write_byte((uint32_t)byte);
 
             /* We need to write one byte at a time */
             byte = ssi_transfer(s->bus, byte);
 
-            DPRINTF("0x%02x read\n", (uint32_t)byte);
+            trace_imx_spi_read_byte((uint32_t)byte);
 
             rx = (rx << 8) | byte;
 
@@ -207,7 +196,7 @@ static void imx_spi_flush_txfifo(IMXSPIState *s)
             s->burst_length -= 8;
         }
 
-        DPRINTF("data rx:0x%08x\n", rx);
+        trace_imx_spi_rx_data(rx);
 
         if (fifo32_is_full(&s->rx_fifo)) {
             s->regs[ECSPI_STATREG] |= ECSPI_STATREG_RO;
@@ -230,8 +219,8 @@ static void imx_spi_flush_txfifo(IMXSPIState *s)
 
     /* TODO: We should also use TDR and RDR bits */
 
-    DPRINTF("End: TX Fifo Size = %d, RX Fifo Size = %d\n",
-            fifo32_num_used(&s->tx_fifo), fifo32_num_used(&s->rx_fifo));
+    trace_imx_spi_flush_txfifo_end(fifo32_num_used(&s->tx_fifo),
+                                   fifo32_num_used(&s->rx_fifo));
 }
 
 static void imx_spi_common_reset(IMXSPIState *s)
@@ -267,6 +256,7 @@ static void imx_spi_soft_reset(IMXSPIState *s)
     imx_spi_update_irq(s);
 
     for (i = 0; i < ECSPI_NUM_CS; i++) {
+        trace_imx_spi_cs(i, 1);
         qemu_set_irq(s->cs_lines[i], 1);
     }
 }
@@ -323,7 +313,7 @@ static uint64_t imx_spi_read(void *opaque, hwaddr offset, unsigned size)
 
         imx_spi_update_irq(s);
     }
-    DPRINTF("reg[%s] => 0x%" PRIx32 "\n", imx_spi_reg_name(index), value);
+    trace_imx_spi_read(imx_spi_reg_name(index), value);
 
     return (uint64_t)value;
 }
@@ -342,8 +332,7 @@ static void imx_spi_write(void *opaque, hwaddr offset, uint64_t value,
         return;
     }
 
-    DPRINTF("reg[%s] <= 0x%" PRIx32 "\n", imx_spi_reg_name(index),
-            (uint32_t)value);
+    trace_imx_spi_write(imx_spi_reg_name(index), value);
 
     if (!imx_spi_is_enabled(s)) {
         /* Block is disabled */
@@ -408,6 +397,7 @@ static void imx_spi_write(void *opaque, hwaddr offset, uint64_t value,
 
             if (burst == 1) {
                 for (i = 0; i < ECSPI_NUM_CS; i++) {
+                    trace_imx_spi_cs(i, 1);
                     qemu_set_irq(s->cs_lines[i], 1);
                 }
             }
