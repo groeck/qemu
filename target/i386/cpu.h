@@ -2381,9 +2381,11 @@ static inline bool hyperv_feat_enabled(X86CPU *cpu, int feat)
 static inline uint64_t cr4_reserved_bits(CPUX86State *env)
 {
     uint64_t reserved_bits = CR4_RESERVED_MASK;
+#if 0
     if (!env->features[FEAT_XSAVE]) {
         reserved_bits |= CR4_OSXSAVE_MASK;
     }
+#endif
     if (!(env->features[FEAT_7_0_EBX] & CPUID_7_0_EBX_SMEP)) {
         reserved_bits |= CR4_SMEP_MASK;
     }
