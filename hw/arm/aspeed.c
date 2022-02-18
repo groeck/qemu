@@ -459,6 +459,9 @@ static void palmetto_bmc_i2c_init(AspeedMachineState *bmc)
     object_property_set_int(OBJECT(dev), "temperature1", 28000, &error_abort);
     object_property_set_int(OBJECT(dev), "temperature2", 20000, &error_abort);
     object_property_set_int(OBJECT(dev), "temperature3", 110000, &error_abort);
+
+    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 2), "tmp464", 0x4a);
+    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 2), "tmp468", 0x4b);
 }
 
 static void quanta_q71l_bmc_i2c_init(AspeedMachineState *bmc)
@@ -472,6 +475,9 @@ static void quanta_q71l_bmc_i2c_init(AspeedMachineState *bmc)
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 1), "tmp105", 0x4c);
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 1), "tmp105", 0x4e);
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 1), "tmp105", 0x4f);
+
+    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 1), "tmp464", 0x4a);
+    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 1), "tmp468", 0x4b);
 
     /* TODO: i2c-1: Add baseboard FRU eeprom@54 24c64 */
     /* TODO: i2c-1: Add Frontpanel FRU eeprom@57 24c64 */
@@ -568,6 +574,10 @@ static void sonorapass_bmc_i2c_init(AspeedMachineState *bmc)
     /* bus 2 : */
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 2), "tmp105", 0x48);
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 2), "tmp105", 0x49);
+
+    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 2), "tmp464", 0x4a);
+    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 2), "tmp468", 0x4b);
+
     /* bus 2 : pca9546 @ 0x73 */
 
     /* bus 3 : pca9548 @ 0x70 */
@@ -584,6 +594,10 @@ static void sonorapass_bmc_i2c_init(AspeedMachineState *bmc)
     /* bus 6 : */
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 6), "tmp105", 0x48);
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 6), "tmp105", 0x49);
+
+    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 6), "tmp464", 0x4a);
+    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 6), "tmp468", 0x4b);
+
     /* bus 6 : pca9546 @ 0x73 */
 
     /* bus 8 : */
@@ -642,9 +656,26 @@ static void witherspoon_bmc_i2c_init(AspeedMachineState *bmc)
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 4), "tmp423", 0x4c);
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 5), "tmp423", 0x4c);
 
+    dev = DEVICE(i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 5), "tmp464", 0x4a));
+    object_property_set_int(OBJECT(dev), "temperature0", 31000, &error_abort);
+    object_property_set_int(OBJECT(dev), "temperature1", 31500, &error_abort);
+    object_property_set_int(OBJECT(dev), "temperature2", 21125, &error_abort);
+    object_property_set_int(OBJECT(dev), "temperature3", 27200, &error_abort);
+    object_property_set_int(OBJECT(dev), "temperature4", 28300, &error_abort);
+
+    dev = DEVICE(i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 5), "tmp468", 0x4b));
+    object_property_set_int(OBJECT(dev), "temperature0", 41000, &error_abort);
+    object_property_set_int(OBJECT(dev), "temperature1", 41500, &error_abort);
+    object_property_set_int(OBJECT(dev), "temperature2", 41125, &error_abort);
+    object_property_set_int(OBJECT(dev), "temperature3", 47200, &error_abort);
+    object_property_set_int(OBJECT(dev), "temperature4", 48300, &error_abort);
+
     /* The Witherspoon expects a TMP275 but a TMP105 is compatible */
     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 9), TYPE_TMP105,
                      0x4a);
+
+    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 9), "tmp464", 0x48);
+    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 9), "tmp468", 0x49);
 
     /* The witherspoon board expects Epson RX8900 I2C RTC but a ds1338 is
      * good enough */
