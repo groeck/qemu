@@ -455,6 +455,7 @@ config ASPEED_SOC
     select TMP105
     select TMP108
     select TMP421
+    select TMP464
     select EMC141X
     select UNIMP
     select LED
