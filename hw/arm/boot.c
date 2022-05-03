@@ -1078,10 +1078,17 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
      * We also refuse to put the initrd somewhere that will definitely
      * overlay the kernel we just loaded, though for kernel formats which
      * don't tell us their exact size (eg self-decompressing 32-bit kernels)
-     * we might still make a bad choice here.
+     * we might still make a bad choice here. Reduce the possible impact
+     * of this problem by moving initrd towards the end of available RAM
+     * for very small systems.
      */
-    info->initrd_start = info->loader_start +
-        MIN(info->ram_size / 2, 128 * MiB);
+    if (info->ram_size <= 32 * MiB) {
+	initrd_size = get_image_size(info->initrd_filename);
+	info->initrd_start = ram_end - initrd_size - 2 * MiB;
+    } else {
+        info->initrd_start = info->loader_start +
+            MIN(info->ram_size / 2, 128 * MiB);
+    }
     if (image_high_addr) {
         info->initrd_start = MAX(info->initrd_start, image_high_addr);
     }
