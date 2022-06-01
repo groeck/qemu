@@ -52,7 +52,6 @@
 #include "hw/qdev-clock.h"
 #include "qom/object.h"
 #include "elf.h"
-#include "qemu-common.h"
 
 typedef enum MPS2FPGAType {
     FPGA_AN385,
