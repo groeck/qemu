@@ -31,6 +31,7 @@ typedef struct MchpPfSoCSysregState {
     SysBusDevice parent;
     MemoryRegion sysreg;
     qemu_irq irq;
+    uint32_t reg[MCHP_PFSOC_SYSREG_REG_SIZE];
 } MchpPfSoCSysregState;
 
 #define TYPE_MCHP_PFSOC_SYSREG "mchp.pfsoc.sysreg"
