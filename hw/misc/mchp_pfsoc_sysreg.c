@@ -27,6 +27,8 @@
 #include "hw/sysbus.h"
 #include "hw/misc/mchp_pfsoc_sysreg.h"
 
+#define CLOCK_CONFIG_CR 0x08
+#define RTC_CLOCK_CR    0x0c
 #define ENVM_CR         0xb8
 
 static uint64_t mchp_pfsoc_sysreg_read(void *opaque, hwaddr offset,
@@ -35,6 +37,12 @@ static uint64_t mchp_pfsoc_sysreg_read(void *opaque, hwaddr offset,
     uint32_t val = 0;
 
     switch (offset) {
+    case CLOCK_CONFIG_CR:
+        val = BIT(4);
+        break;
+    case RTC_CLOCK_CR:
+        val = 0x00010064;
+        break;
     case ENVM_CR:
         /* Indicate the eNVM is running at the configured divider rate */
         val = BIT(6);
