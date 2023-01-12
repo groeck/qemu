@@ -663,6 +663,7 @@ static void nvme_irq_check(NvmeCtrl *n)
     }
 
     if (~intms & n->irq_status) {
+        pci_irq_deassert(pci);
         pci_irq_assert(pci);
     } else {
         pci_irq_deassert(pci);
