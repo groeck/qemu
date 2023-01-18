@@ -3,6 +3,11 @@
 # pci.c
 pci_update_mappings_del(const char *dev, uint32_t bus, uint32_t slot, uint32_t func, int bar, uint64_t addr, uint64_t size) "%s %02x:%02x.%x %d,0x%"PRIx64"+0x%"PRIx64
 pci_update_mappings_add(const char *dev, uint32_t bus, uint32_t slot, uint32_t func, int bar, uint64_t addr, uint64_t size) "%s %02x:%02x.%x %d,0x%"PRIx64"+0x%"PRIx64
+pci_set_irq_state(const char *dev, uint32_t bus, uint32_t slot, uint32_t func, int irq_num, int level) "%s %02x:%02x.%x irq %d level %d"
+pci_bus_change_irq_level(uint32_t bus, int irq_num, int change) "bus %x irq %d change %d"
+pci_change_irq_level(const char *dev, uint32_t bus, uint32_t slot, uint32_t func, int irq_num, int change) "%s %02x:%02x.%x irq %d change %d"
+pci_device_deassert_intx(const char *dev, uint32_t bus, uint32_t slot, uint32_t func) "%s %02x:%02x.%x deassert"
+pci_update_irq_status(const char *dev, uint32_t bus, uint32_t slot, uint32_t func, int status) "%s %02x:%02x.%x status %d"
 
 # pci_host.c
 pci_cfg_read(const char *dev, uint32_t bus, uint32_t slot, uint32_t func, unsigned offs, unsigned val) "%s %02x:%02x.%x @0x%x -> 0x%x"
