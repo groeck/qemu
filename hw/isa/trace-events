@@ -21,3 +21,7 @@ via_pm_io_read(uint32_t addr, uint32_t val, int len) "addr 0x%x val 0x%x len 0x%
 via_pm_io_write(uint32_t addr, uint32_t val, int len) "addr 0x%x val 0x%x len 0x%x"
 via_superio_read(uint8_t addr, uint8_t val) "addr 0x%x val 0x%x"
 via_superio_write(uint8_t addr, uint32_t val) "addr 0x%x val 0x%x"
+
+# piix4
+piix4_set_irq(uint32_t bus, int irq_num, int pic_irq, int level) "bus %u interrupt %d [%d] level %d"
+piix4_do_set_irq(uint32_t bus, int pic_level) "bus %u pic_level %d"

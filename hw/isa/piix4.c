@@ -42,6 +42,8 @@
 #include "sysemu/runstate.h"
 #include "qom/object.h"
 
+#include "trace.h"
+
 struct PIIX4State {
     PCIDevice dev;
     qemu_irq cpu_intr;
@@ -67,6 +69,7 @@ static void piix4_set_irq(void *opaque, int irq_num, int level)
     /* now we change the pic irq level according to the piix irq mappings */
     /* XXX: optimize */
     pic_irq = s->dev.config[PIIX_PIRQCA + irq_num];
+    trace_piix4_set_irq(pci_bus_num(bus), irq_num, pic_irq, level);
     if (pic_irq < ISA_NUM_IRQS) {
         /* The pic level is the logical OR of all the PCI irqs mapped to it. */
         pic_level = 0;
@@ -75,6 +78,7 @@ static void piix4_set_irq(void *opaque, int irq_num, int level)
                 pic_level |= pci_bus_get_irq_level(bus, i);
             }
         }
+        trace_piix4_do_set_irq(pci_bus_num(bus), pic_level);
         qemu_set_irq(s->isa[pic_irq], pic_level);
     }
 }
