@@ -266,12 +266,18 @@ static inline int pci_irq_state(PCIDevice *d, int irq_num)
 
 static inline void pci_set_irq_state(PCIDevice *d, int irq_num, int level)
 {
+        trace_pci_set_irq_state(d->name, pci_dev_bus_num(d),
+                                PCI_SLOT(d->devfn), PCI_FUNC(d->devfn),
+				irq_num, level);
+
         d->irq_state &= ~(0x1 << irq_num);
         d->irq_state |= level << irq_num;
 }
 
 static void pci_bus_change_irq_level(PCIBus *bus, int irq_num, int change)
 {
+    trace_pci_bus_change_irq_level(pci_bus_num(bus), irq_num, change);
+
     assert(irq_num >= 0);
     assert(irq_num < bus->nirq);
     bus->irq_count[irq_num] += change;
@@ -281,6 +287,11 @@ static void pci_bus_change_irq_level(PCIBus *bus, int irq_num, int change)
 static void pci_change_irq_level(PCIDevice *pci_dev, int irq_num, int change)
 {
     PCIBus *bus;
+
+    trace_pci_change_irq_level(pci_dev->name, pci_dev_bus_num(pci_dev),
+			       PCI_SLOT(pci_dev->devfn), PCI_FUNC(pci_dev->devfn),
+			       irq_num, change);
+
     for (;;) {
         bus = pci_get_bus(pci_dev);
         irq_num = bus->map_irq(pci_dev, irq_num);
@@ -302,6 +313,10 @@ int pci_bus_get_irq_level(PCIBus *bus, int irq_num)
  * state change. */
 static void pci_update_irq_status(PCIDevice *dev)
 {
+    trace_pci_update_irq_status(dev->name, pci_dev_bus_num(dev),
+                               PCI_SLOT(dev->devfn), PCI_FUNC(dev->devfn),
+			       dev->irq_state);
+
     if (dev->irq_state) {
         dev->config[PCI_STATUS] |= PCI_STATUS_INTERRUPT;
     } else {
@@ -312,6 +327,9 @@ static void pci_update_irq_status(PCIDevice *dev)
 void pci_device_deassert_intx(PCIDevice *dev)
 {
     int i;
+
+    trace_pci_device_deassert_intx(dev->name, pci_dev_bus_num(dev), PCI_SLOT(dev->devfn), PCI_FUNC(dev->devfn));
+
     for (i = 0; i < PCI_NUM_PINS; ++i) {
         pci_irq_handler(dev, i, 0);
     }
