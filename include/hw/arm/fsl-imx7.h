@@ -138,6 +138,9 @@ enum FslIMX7MemoryMap {
     FSL_IMX7_PCIE_PHY_ADDR        = 0x306D0000,
     FSL_IMX7_PCIE_PHY_SIZE        = 0x10000,
 
+    FSL_IMX7_PXP_ADDR             = 0x30700000,
+    FSL_IMX7_PXP_SIZE             = 0x10000,
+
     FSL_IMX7_GPC_ADDR             = 0x303A0000,
 
     FSL_IMX7_CAAM_ADDR            = 0x30900000,
