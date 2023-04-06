@@ -465,6 +465,11 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
     create_unimplemented_device("sdma", FSL_IMX7_SDMA_ADDR, FSL_IMX7_SDMA_SIZE);
 
     /*
+     * PXP
+     */
+    create_unimplemented_device("pxp", FSL_IMX7_PXP_ADDR, FSL_IMX7_PXP_SIZE);
+
+    /*
      * CAAM
      */
     create_unimplemented_device("caam", FSL_IMX7_CAAM_ADDR, FSL_IMX7_CAAM_SIZE);
