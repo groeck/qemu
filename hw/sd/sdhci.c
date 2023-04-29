@@ -1397,16 +1397,18 @@ void sdhci_common_realize(SDHCIState *s, Error **errp)
 {
     ERRP_GUARD();
 
-    switch (s->endianness) {
-    case DEVICE_LITTLE_ENDIAN:
-        s->io_ops = &sdhci_mmio_le_ops;
-        break;
-    case DEVICE_BIG_ENDIAN:
-        s->io_ops = &sdhci_mmio_be_ops;
-        break;
-    default:
-        error_setg(errp, "Incorrect endianness");
-        return;
+    if (!s->io_ops) {
+        switch (s->endianness) {
+        case DEVICE_LITTLE_ENDIAN:
+            s->io_ops = &sdhci_mmio_le_ops;
+            break;
+        case DEVICE_BIG_ENDIAN:
+            s->io_ops = &sdhci_mmio_be_ops;
+            break;
+        default:
+            error_setg(errp, "Incorrect endianness");
+            return;
+        }
     }
 
     sdhci_init_readonly_registers(s, errp);
