@@ -42,11 +42,6 @@ typedef struct BMDMAState {
 #define TYPE_PCI_IDE "pci-ide"
 OBJECT_DECLARE_SIMPLE_TYPE(PCIIDEState, PCI_IDE)
 
-enum {
-    PCI_IDE_SECONDARY, /* used only for cmd646 */
-    PCI_IDE_LEGACY_MODE
-};
-
 struct PCIIDEState {
     /*< private >*/
     PCIDevice parent_obj;
@@ -55,7 +50,7 @@ struct PCIIDEState {
     IDEBus bus[2];
     BMDMAState bmdma[2];
     qemu_irq isa_irq[2];
-    uint32_t flags;
+    uint32_t secondary; /* used only for cmd646 */
     MemoryRegion bmdma_bar;
     MemoryRegion cmd_bar[2];
     MemoryRegion data_bar[2];
