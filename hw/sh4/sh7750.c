@@ -53,6 +53,7 @@ typedef struct SH7750State {
     SuperHCPU *cpu;
     /* Peripheral frequency in Hz */
     uint32_t periph_freq;
+    uint16_t frqcr;
     /* SDRAM controller */
     uint32_t bcr1;
     uint16_t bcr2;
@@ -239,7 +240,7 @@ static uint32_t sh7750_mem_readw(void *opaque, hwaddr addr)
         }
         return s->bcr3;
     case SH7750_FRQCR_A7:
-        return 0;
+        return s->frqcr;
     case SH7750_PCR_A7:
         return s->pcr;
     case SH7750_RFCR_A7:
@@ -773,6 +774,7 @@ SH7750State *sh7750_init(SuperHCPU *cpu, MemoryRegion *sysmem)
     s = g_new0(SH7750State, 1);
     s->cpu = cpu;
     s->periph_freq = 60000000; /* 60MHz */
+    s->frqcr = 0x0e0a; /* Clock Mode 5 */
     memory_region_init_io(&s->iomem, NULL, &sh7750_mem_ops, s,
                           "memory", 0x1fc01000);
 
