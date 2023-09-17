@@ -774,7 +774,7 @@ SH7750State *sh7750_init(SuperHCPU *cpu, MemoryRegion *sysmem)
     s = g_new0(SH7750State, 1);
     s->cpu = cpu;
     s->periph_freq = 60000000; /* 60MHz */
-    s->frqcr = 0x0e0a; /* Clock Mode 5 */
+    s->frqcr = 0x0e0c; /* Clock Mode 5 */
     memory_region_init_io(&s->iomem, NULL, &sh7750_mem_ops, s,
                           "memory", 0x1fc01000);
 
