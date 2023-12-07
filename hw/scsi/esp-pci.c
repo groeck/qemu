@@ -74,6 +74,7 @@ struct PCIESPState {
     MemoryRegion io;
     uint32_t dma_regs[8];
     uint32_t sbac;
+    bool dma_complete;
     ESPState esp;
 };
 
@@ -108,6 +109,7 @@ static void esp_pci_handle_start(PCIESPState *pci, uint32_t val)
 
     trace_esp_pci_dma_start(val);
 
+    pci->dma_complete = false;
     pci->dma_regs[DMA_WBC] = pci->dma_regs[DMA_STC];
     pci->dma_regs[DMA_WAC] = pci->dma_regs[DMA_SPA];
     pci->dma_regs[DMA_WMAC] = pci->dma_regs[DMA_SMDLA];
@@ -287,7 +289,7 @@ static void esp_pci_dma_memory_rw(PCIESPState *pci, uint8_t *buf, int len,
     pci->dma_regs[DMA_WBC] -= len;
     pci->dma_regs[DMA_WAC] += len;
     if (pci->dma_regs[DMA_WBC] == 0) {
-        pci->dma_regs[DMA_STAT] |= DMA_STAT_DONE;
+        pci->dma_complete = true;
     }
 }
 
@@ -349,8 +351,10 @@ static void esp_pci_command_complete(SCSIRequest *req, size_t resid)
     PCIESPState *pci = container_of(s, PCIESPState, esp);
 
     esp_command_complete(req, resid);
-    pci->dma_regs[DMA_WBC] = 0;
-    pci->dma_regs[DMA_STAT] |= DMA_STAT_DONE;
+    if (pci->dma_complete) {
+        pci->dma_regs[DMA_STAT] |= DMA_STAT_DONE;
+        pci->dma_complete = false;
+    }
 }
 
 static const struct SCSIBusInfo esp_pci_scsi_info = {
