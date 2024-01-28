@@ -85,4 +85,9 @@ struct IMXI2CState {
     uint16_t i2dr_write;
 };
 
+static inline I2CBus *imx_i2c_get_bus(struct IMXI2CState *s)
+{
+    return s->bus;
+}
+
 #endif /* IMX_I2C_H */
