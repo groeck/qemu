@@ -626,6 +626,7 @@ config FSL_IMX7
     select IMX
     select IMX_FEC
     select IMX_I2C
+    select PFUZE
     select WDT_IMX2
     select PCI_EXPRESS_DESIGNWARE
     select SDHCI
