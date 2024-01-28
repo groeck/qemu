@@ -17,6 +17,7 @@
 #include "hw/arm/fsl-imx7.h"
 #include "hw/arm/boot.h"
 #include "hw/boards.h"
+#include "hw/i2c/i2c.h"
 #include "hw/qdev-properties.h"
 #include "qemu/error-report.h"
 #include "sysemu/qtest.h"
@@ -48,6 +49,8 @@ static void mcimx7d_sabre_init(MachineState *machine)
 
     memory_region_add_subregion(get_system_memory(), FSL_IMX7_MMDC_ADDR,
                                 machine->ram);
+
+    i2c_slave_create_simple(imx_i2c_get_bus(&s->i2c[0]), "pfuze3000", 0x08);
 
     for (i = 0; i < FSL_IMX7_NUM_USDHCS; i++) {
         BusState *bus;
