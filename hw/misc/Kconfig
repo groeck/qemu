@@ -197,6 +197,10 @@ config DJMEMC
 config IOSB
     bool
 
+config PFUZE
+    bool
+    depends on I2C
+
 config XLNX_VERSAL_TRNG
     bool
 
