@@ -52,6 +52,7 @@ struct OHCIState {
     uint32_t ctl, status;
     uint32_t intr_status;
     uint32_t intr;
+    int level;
 
     /* memory pointer partition */
     uint32_t hcca;
