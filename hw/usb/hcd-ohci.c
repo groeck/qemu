@@ -267,6 +267,17 @@ static inline void ohci_intr_update(OHCIState *ohci)
         (ohci->intr_status & ohci->intr))
         level = 1;
 
+    /*
+     * If linux does not handle all interrupts and its interrupt handling
+     * system is edge triggered, it may not handle new interrupt requests.
+     * It is unknown if this is a Linux bug or a qemu bug. Work around it
+     * by generating an interrupt pulse if an interrupt is pending but has
+     * not been cleared.
+     */
+    if (level && ohci->level)
+        qemu_set_irq(ohci->irq, 0);
+
+    ohci->level = level;
     qemu_set_irq(ohci->irq, level);
 }
 
