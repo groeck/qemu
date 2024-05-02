@@ -36,6 +36,7 @@
 #include "hw/ppc/fdt.h"
 #include "hw/qdev-properties.h"
 #include "hw/intc/ppc-uic.h"
+#include "hw/misc/unimp.h"
 
 #include <libfdt.h>
 
@@ -450,6 +451,10 @@ static void sam460ex_init(MachineState *machine)
                                qdev_get_gpio_in(uic[1], 0));
     sysbus_mmio_map(SYS_BUS_DEVICE(dev), 1, 0xc08000000);
     pci_bus = PCI_BUS(qdev_get_child_bus(dev, "pci.0"));
+
+    /* unimplemented devices */
+    create_unimplemented_device("emac-460ex.0", 0xef600e00, 0x100);
+    create_unimplemented_device("emac-460ex.1", 0xef600f00, 0x100);
 
     /* PCI devices */
     pci_create_simple(pci_bus, PCI_DEVFN(6, 0), "sm501");
