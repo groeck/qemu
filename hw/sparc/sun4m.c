@@ -72,8 +72,8 @@
  */
 
 #define KERNEL_LOAD_ADDR     0x00004000
-#define CMDLINE_ADDR         0x007ff000
-#define INITRD_LOAD_ADDR     0x00800000
+#define CMDLINE_ADDR         0x00bff000
+#define INITRD_LOAD_ADDR     0x00c00000
 #define PROM_SIZE_MAX        (1 * MiB)
 #define PROM_VADDR           0xffd00000
 #define PROM_FILENAME        "openbios-sparc32"
