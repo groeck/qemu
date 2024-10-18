@@ -67,6 +67,10 @@ static void raspi4_modify_dtb(const struct arm_boot_info *info, void *fdt)
         "brcm,bcm2711-rng200",
         "brcm,bcm2711-thermal",
         "brcm,bcm2711-genet-v5",
+        "brcm,l2-intc",
+        "brcm,bcm2711-hdmi-i2c",
+        "brcm,brcmstb-i2c",
+        "brcm,brcmper-i2c",
     };
 
     for (int i = 0; i < ARRAY_SIZE(nodes_to_remove); i++) {
