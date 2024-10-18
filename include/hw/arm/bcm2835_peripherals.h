@@ -80,6 +80,7 @@ struct BCMSocPeripheralBaseState {
     UnimplementedDeviceState smi;
     DWC2State dwc2;
     UnimplementedDeviceState sdramc;
+    UnimplementedDeviceState other;
 };
 
 struct BCMSocPeripheralBaseClass {
