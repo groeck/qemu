@@ -129,6 +129,7 @@ uint64_t board_ram_size(uint32_t board_rev);
 #define DMA15_OFFSET            0xE05000 /* DMA controller, channel 15 */
 #define DCRC_OFFSET             0xe07000
 #define AXIP_OFFSET             0xe08000
+#define OTHER_OFFSET            0xf00000
 
 /* GPU interrupts */
 #define INTERRUPT_TIMER0               0
