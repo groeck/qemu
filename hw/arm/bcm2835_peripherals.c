@@ -518,6 +518,7 @@ void bcm_soc_peripherals_common_realize(DeviceState *dev, Error **errp)
     create_unimp(s, &s->ave0, "bcm2835-ave0", AVE0_OFFSET, 0x8000);
     create_unimp(s, &s->v3d, "bcm2835-v3d", V3D_OFFSET, 0x1000);
     create_unimp(s, &s->sdramc, "bcm2835-sdramc", SDRAMC_OFFSET, 0x100);
+    create_unimp(s, &s->other, "bcm2835-other", OTHER_OFFSET, 0x100000);
 }
 
 static void bcm2835_peripherals_class_init(ObjectClass *oc, const void *data)
