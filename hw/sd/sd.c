@@ -1577,7 +1577,7 @@ static sd_rsp_type_t emmc_cmd_SEND_EXT_CSD(SDState *sd, SDRequest req)
 /* CMD9 */
 static sd_rsp_type_t spi_cmd_SEND_CSD(SDState *sd, SDRequest req)
 {
-    if (sd->state != sd_standby_state) {
+    if (sd->state != sd_transfer_state) {
         return sd_invalid_state_for_cmd(sd, req);
     }
     return sd_cmd_to_sendingdata(sd, req, sd_req_get_address(sd, req),
@@ -1596,7 +1596,7 @@ static sd_rsp_type_t sd_cmd_SEND_CSD(SDState *sd, SDRequest req)
 /* CMD10 */
 static sd_rsp_type_t spi_cmd_SEND_CID(SDState *sd, SDRequest req)
 {
-    if (sd->state != sd_standby_state) {
+    if (sd->state != sd_transfer_state) {
         return sd_invalid_state_for_cmd(sd, req);
     }
     return sd_cmd_to_sendingdata(sd, req, sd_req_get_address(sd, req),
@@ -1632,6 +1632,7 @@ static sd_rsp_type_t sd_cmd_STOP_TRANSMISSION(SDState *sd, SDRequest req)
 /* CMD13 */
 static sd_rsp_type_t sd_cmd_SEND_STATUS(SDState *sd, SDRequest req)
 {
+
     if (sd->mode != sd_data_transfer_mode) {
         return sd_invalid_mode_for_cmd(sd, req);
     }
@@ -1649,7 +1650,7 @@ static sd_rsp_type_t sd_cmd_SEND_STATUS(SDState *sd, SDRequest req)
     }
 
     if (sd_is_spi(sd)) {
-        return sd_r2_s;
+        return sd_r1;
     }
 
     return sd_req_rca_same(sd, req) ? sd_r1 : sd_r0;
