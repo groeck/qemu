@@ -23,7 +23,7 @@ static void usb_uhci_vt82c686b_realize(PCIDevice *dev, Error **errp)
 
     usb_uhci_common_realize_pci(dev, errp);
     object_unref(s->state.irq);
-    s->state.irq = qemu_allocate_irq(uhci_isa_set_irq, &s->state, 0);
+    s->state.irq = qemu_allocate_irq(uhci_isa_set_irq, s, 0);
 }
 
 static UHCIPCIInfo uhci_info[] = {
