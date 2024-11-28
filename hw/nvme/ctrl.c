@@ -663,6 +663,7 @@ static void nvme_irq_check(NvmeCtrl *n)
     }
 
     if (~intms & n->irq_status) {
+        pci_irq_deassert(pci);
         pci_irq_assert(pci);
     } else {
         pci_irq_deassert(pci);
@@ -701,27 +702,6 @@ static void nvme_irq_deassert(NvmeCtrl *n, NvmeCQueue *cq)
             nvme_irq_check(n);
         }
     }
-}
-
-/* This is not correct, but it works */
-static void pci_irq_pulse(PCIDevice *pci_dev)
-{
-    pci_irq_assert(pci_dev);
-    pci_irq_deassert(pci_dev);
-}
-
-static void nvme_irq_pulse(NvmeCtrl *n, NvmeCQueue *cq)
-{
-    if (!cq->irq_enabled) {
-        return;
-    }
-
-    if (msix_enabled(&(n->parent_obj))) {
-        msix_notify(&(n->parent_obj), cq->vector);
-        return;
-    }
-
-    pci_irq_pulse(&n->parent_obj);
 }
 
 static void nvme_req_clear(NvmeRequest *req)
@@ -8178,12 +8158,6 @@ static void nvme_process_db(NvmeCtrl *n, hwaddr addr, int val)
             }
 
             nvme_irq_deassert(n, cq);
-        } else {
-            /*
-             * Retrigger the irq just to make sure the host has no excuse for
-             * not knowing there's more work to complete on this CQ.
-             */
-            nvme_irq_pulse(n, cq);
         }
     } else {
         /* Submission queue doorbell write */
