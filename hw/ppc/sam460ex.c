@@ -63,8 +63,8 @@
 /* from U-Boot */
 #define EPAPR_MAGIC           (0x45504150)
 #define KERNEL_ADDR           0x1000000
-#define FDT_ADDR              0x1800000
-#define RAMDISK_ADDR          0x1900000
+#define FDT_ADDR              0x2000000
+#define RAMDISK_ADDR          0x2100000
 
 /* Sam460ex IRQ MAP:
    IRQ0  = ETH_INT
