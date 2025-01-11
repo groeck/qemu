@@ -518,6 +518,7 @@ config FSL_IMX6
     select PCI_EXPRESS_DESIGNWARE
     select SDHCI
     select USB_CHIPIDEA
+    select OR_IRQ
 
 config ASPEED_SOC
     bool
@@ -579,6 +580,7 @@ config FSL_IMX7
     select WDT_IMX2
     select PCI_EXPRESS_DESIGNWARE
     select SDHCI
+    select OR_IRQ
     select UNIMP
     select USB_CHIPIDEA
 
