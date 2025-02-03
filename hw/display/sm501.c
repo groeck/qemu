@@ -1058,14 +1058,25 @@ static void sm501_system_config_write(void *opaque, hwaddr addr,
     }
 }
 
-static const MemoryRegionOps sm501_system_config_ops = {
-    .read = sm501_system_config_read,
-    .write = sm501_system_config_write,
-    .valid = {
-        .min_access_size = 4,
-        .max_access_size = 4,
+static const MemoryRegionOps sm501_system_config_ops[] = {
+    [DEVICE_NATIVE_ENDIAN] = {
+        .read = sm501_system_config_read,
+        .write = sm501_system_config_write,
+        .valid = {
+            .min_access_size = 4,
+            .max_access_size = 4,
+        },
+        .endianness = DEVICE_NATIVE_ENDIAN,
     },
-    .endianness = DEVICE_LITTLE_ENDIAN,
+    [DEVICE_LITTLE_ENDIAN] = {
+        .read = sm501_system_config_read,
+        .write = sm501_system_config_write,
+        .valid = {
+            .min_access_size = 4,
+            .max_access_size = 4,
+        },
+        .endianness = DEVICE_LITTLE_ENDIAN,
+    },
 };
 
 static uint64_t sm501_i2c_read(void *opaque, hwaddr addr, unsigned size)
@@ -1889,7 +1900,7 @@ static void sm501_reset(SM501State *s)
 }
 
 static void sm501_init(SM501State *s, DeviceState *dev,
-                       uint32_t local_mem_bytes)
+                       uint32_t local_mem_bytes, enum device_endian endianness)
 {
 #ifndef CONFIG_PIXMAN
     if (s->use_pixman != 0) {
@@ -1915,7 +1926,7 @@ static void sm501_init(SM501State *s, DeviceState *dev,
     /* mmio */
     memory_region_init(&s->mmio_region, OBJECT(dev), "sm501.mmio", MMIO_SIZE);
     memory_region_init_io(&s->system_config_region, OBJECT(dev),
-                          &sm501_system_config_ops, s,
+                          &sm501_system_config_ops[endianness], s,
                           "sm501-system-config", 0x6c);
     memory_region_add_subregion(&s->mmio_region, SM501_SYS_CONFIG,
                                 &s->system_config_region);
@@ -2033,7 +2044,7 @@ static void sm501_realize_sysbus(DeviceState *dev, Error **errp)
     SysBusDevice *sbd = SYS_BUS_DEVICE(dev);
     MemoryRegion *mr;
 
-    sm501_init(&s->state, dev, s->vram_size);
+    sm501_init(&s->state, dev, s->vram_size, DEVICE_NATIVE_ENDIAN);
     if (get_local_mem_size(&s->state) != s->vram_size) {
         error_setg(errp, "Invalid VRAM size, nearest valid size is %" PRIu32,
                    get_local_mem_size(&s->state));
@@ -2131,7 +2142,7 @@ static void sm501_realize_pci(PCIDevice *dev, Error **errp)
 {
     SM501PCIState *s = PCI_SM501(dev);
 
-    sm501_init(&s->state, DEVICE(dev), s->vram_size);
+    sm501_init(&s->state, DEVICE(dev), s->vram_size, DEVICE_LITTLE_ENDIAN);
     if (get_local_mem_size(&s->state) != s->vram_size) {
         error_setg(errp, "Invalid VRAM size, nearest valid size is %" PRIu32,
                    get_local_mem_size(&s->state));
