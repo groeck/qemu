@@ -1766,10 +1766,17 @@ static void ohci_mem_write(void *opaque,
     }
 }
 
-static const MemoryRegionOps ohci_mem_ops = {
-    .read = ohci_mem_read,
-    .write = ohci_mem_write,
-    .endianness = DEVICE_LITTLE_ENDIAN,
+static const MemoryRegionOps ohci_mem_ops[] = {
+    [DEVICE_NATIVE_ENDIAN] = {
+        .read = ohci_mem_read,
+        .write = ohci_mem_write,
+        .endianness = DEVICE_NATIVE_ENDIAN,
+    },
+    [DEVICE_LITTLE_ENDIAN] = {
+        .read = ohci_mem_read,
+        .write = ohci_mem_write,
+        .endianness = DEVICE_LITTLE_ENDIAN,
+    },
 };
 
 /* USBPortOps */
@@ -1883,7 +1890,9 @@ static USBBusOps ohci_bus_ops = {
 void usb_ohci_init(OHCIState *ohci, DeviceState *dev, uint32_t num_ports,
                    dma_addr_t localmem_base, char *masterbus,
                    uint32_t firstport, AddressSpace *as,
-                   void (*ohci_die_fn)(OHCIState *), Error **errp)
+                   void (*ohci_die_fn)(OHCIState *),
+                   enum device_endian endianness,
+                   Error **errp)
 {
     Error *err = NULL;
     int i;
@@ -1935,7 +1944,7 @@ void usb_ohci_init(OHCIState *ohci, DeviceState *dev, uint32_t num_ports,
         }
     }
 
-    memory_region_init_io(&ohci->mem, OBJECT(dev), &ohci_mem_ops,
+    memory_region_init_io(&ohci->mem, OBJECT(dev), &ohci_mem_ops[endianness],
                           ohci, "ohci", 256);
     ohci->localmem_base = localmem_base;
 

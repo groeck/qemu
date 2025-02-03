@@ -69,7 +69,10 @@ static void usb_ohci_realize_pci(PCIDevice *dev, Error **errp)
 
     usb_ohci_init(&ohci->state, DEVICE(dev), ohci->num_ports, 0,
                   ohci->masterbus, ohci->firstport,
-                  pci_get_address_space(dev), ohci_pci_die, &err);
+                  pci_get_address_space(dev),
+                  ohci_pci_die,
+                  DEVICE_LITTLE_ENDIAN,
+                  &err);
     if (err) {
         error_propagate(errp, err);
         return;
