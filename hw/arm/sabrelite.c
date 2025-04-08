@@ -19,6 +19,21 @@
 #include "qemu/error-report.h"
 #include "system/qtest.h"
 
+struct SabreliteMachineState {
+    /* Private */
+    MachineState parent_obj;
+    /* Public */
+
+    char *spi_model; /* The SPI model provided on the command line */
+};
+
+typedef struct SabreliteMachineState SabreliteMachineState;
+
+#define TYPE_SABRELITE_MACHINE  MACHINE_TYPE_NAME("sabrelite")
+
+DECLARE_INSTANCE_CHECKER(SabreliteMachineState, SABRELITE_MACHINE,
+                         TYPE_SABRELITE_MACHINE)
+
 static struct arm_boot_info sabrelite_binfo = {
     /* DDR memory start */
     .loader_start = FSL_IMX6_MMDC_ADDR,
@@ -41,6 +56,7 @@ static void sabrelite_reset_secondary(ARMCPU *cpu,
 static void sabrelite_init(MachineState *machine)
 {
     FslIMX6State *s;
+    SabreliteMachineState *sms = SABRELITE_MACHINE(machine);
 
     /* Check the amount of memory is compatible with the SOC */
     if (machine->ram_size > FSL_IMX6_MMDC_SIZE) {
@@ -79,7 +95,8 @@ static void sabrelite_init(MachineState *machine)
                 qemu_irq cs_line;
                 DriveInfo *dinfo = drive_get(IF_MTD, 0, 0);
 
-                flash_dev = qdev_new("sst25vf016b");
+                flash_dev = qdev_new(sms->spi_model ?
+                                     sms->spi_model : "sst25vf016b");
                 if (dinfo) {
                     qdev_prop_set_drive_err(flash_dev, "drive",
                                             blk_by_legacy_dinfo(dinfo),
@@ -103,14 +120,54 @@ static void sabrelite_init(MachineState *machine)
     }
 }
 
-static void sabrelite_machine_init(MachineClass *mc)
+static char *sabrelite_get_spi_model(Object *obj, Error **errp)
 {
+    SabreliteMachineState *sms = SABRELITE_MACHINE(obj);
+    return g_strdup(sms->spi_model);
+}
+
+static void sabrelite_set_spi_model(Object *obj, const char *value, Error **errp)
+{
+    SabreliteMachineState *sms = SABRELITE_MACHINE(obj);
+
+    g_free(sms->spi_model);
+    sms->spi_model = g_strdup(value);
+}
+
+static void sabrelite_machine_finalize(Object *obj)
+{
+    SabreliteMachineState *sms = SABRELITE_MACHINE(obj);
+
+    g_free(sms->spi_model);
+}
+
+static void sabrelite_machine_class_init(ObjectClass *oc, void *data)
+{
+    MachineClass *mc = MACHINE_CLASS(oc);
+
     mc->desc = "Freescale i.MX6 Quad SABRE Lite Board (Cortex-A9)";
     mc->init = sabrelite_init;
     mc->max_cpus = FSL_IMX6_NUM_CPUS;
     mc->ignore_memory_transaction_failures = true;
     mc->default_ram_id = "sabrelite.ram";
     mc->auto_create_sdcard = true;
+
+    object_class_property_add_str(oc, "spi-model", sabrelite_get_spi_model,
+                                   sabrelite_set_spi_model);
+    object_class_property_set_description(oc, "spi-model",
+                                          "Change the SPI Flash model");
 }
 
-DEFINE_MACHINE("sabrelite", sabrelite_machine_init)
+static const TypeInfo sabrelite_machine_type = {
+    .name          = TYPE_SABRELITE_MACHINE,
+    .parent        = TYPE_MACHINE,
+    .instance_size = sizeof(SabreliteMachineState),
+    .instance_finalize = sabrelite_machine_finalize,
+    .class_init    = sabrelite_machine_class_init,
+};
+
+static void sabrelite_register_types(void)
+{
+    type_register_static(&sabrelite_machine_type);
+}
+type_init(sabrelite_register_types);
