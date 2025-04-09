@@ -24,7 +24,8 @@ static void imx8mp_evk_modify_dtb(const struct arm_boot_info *info, void *fdt)
 
     /* Temporarily disable following nodes until they are implemented */
     const char *nodes_to_remove[] = {
-        "nxp,imx8mp-fspi",
+        "nxp,imx8mp-fspi",  /* flexspi */
+        "snps,dwmac-5.10a", /* Designware MAC */
     };
 
     for (i = 0; i < ARRAY_SIZE(nodes_to_remove); i++) {
