@@ -28,6 +28,8 @@
 #include "hw/irq.h"
 #include "hw/pci/pci_device.h"
 #include "hw/pci/pci_host.h"
+#include "qemu/bswap.h"
+#include "qemu/log.h"
 #include "qemu/module.h"
 #include "qom/object.h"
 
@@ -70,6 +72,11 @@ static void sh_pci_reg_write(void *p, hwaddr addr, uint64_t val, unsigned size)
     case 0x220:
         pci_data_write(phb->bus, pcic->par, val, 4);
         break;
+    default:
+        qemu_log_mask(LOG_UNIMP,
+                      "Write 0x%lx to unimplemented register 0x%x\n",
+                      (unsigned long)val, (unsigned int)addr);
+        break;
     }
 }
 
@@ -90,6 +97,8 @@ static uint64_t sh_pci_reg_read(void *p, hwaddr addr, unsigned size)
     case 0x220:
         return pci_data_read(phb->bus, pcic->par, 4);
     }
+    qemu_log_mask(LOG_UNIMP, "Read from unimplemented register 0x%x\n",
+                  (unsigned int)addr);
     return 0;
 }
 
