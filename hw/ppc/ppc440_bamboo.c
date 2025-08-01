@@ -39,8 +39,8 @@
 
 /* from u-boot */
 #define KERNEL_ADDR  0x1000000
-#define FDT_ADDR     0x1800000
-#define RAMDISK_ADDR 0x1900000
+#define FDT_ADDR     0x2000000
+#define RAMDISK_ADDR 0x2100000
 
 #define PPC440EP_PCI_CONFIG     0xeec00000
 #define PPC440EP_PCI_INTACK     0xeed00000
