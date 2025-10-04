@@ -521,6 +521,7 @@ static void microchip_icicle_kit_machine_init(MachineState *machine)
     uint64_t mem_low_size, mem_high_size;
     hwaddr firmware_load_addr;
     const char *firmware_name;
+    bool kernel_as_payload = false;
     target_ulong firmware_end_addr, kernel_start_addr;
     uint64_t kernel_entry;
     uint64_t fdt_load_addr;
@@ -593,12 +594,25 @@ static void microchip_icicle_kit_machine_init(MachineState *machine)
      *
      * This ensures backwards compatibility with how we used to expose -bios
      * to users but allows them to run through direct kernel booting as well.
+     *
+     * When -kernel is used for direct boot, -dtb must be present to provide
+     * a valid device tree for the board, as we don't generate device tree.
      */
 
-    if (machine->kernel_filename) {
+    if (machine->kernel_filename && machine->dtb) {
+        int fdt_size;
+        machine->fdt = load_device_tree(machine->dtb, &fdt_size);
+        if (!machine->fdt) {
+            error_report("load_device_tree() failed");
+            exit(1);
+        }
+
         firmware_name = RISCV64_BIOS_BIN;
         firmware_load_addr = memmap[MICROCHIP_PFSOC_DRAM_LO].base;
-    } else {
+        kernel_as_payload = true;
+    }
+
+    if (!kernel_as_payload) {
         firmware_name = BIOS_FILENAME;
         firmware_load_addr = RESET_VECTOR;
     }
@@ -608,7 +622,7 @@ static void microchip_icicle_kit_machine_init(MachineState *machine)
                                                      &firmware_load_addr, NULL);
 
     riscv_boot_info_init(&boot_info, &s->soc.u_cpus);
-    if (machine->kernel_filename) {
+    if (kernel_as_payload) {
         kernel_start_addr = riscv_calc_kernel_start_addr(&boot_info,
                                                          firmware_end_addr);
 
@@ -616,32 +630,18 @@ static void microchip_icicle_kit_machine_init(MachineState *machine)
                           true, NULL);
         kernel_entry = boot_info.image_low_addr;
 
-        if (machine->dtb) {
-            int fdt_size;
-            machine->fdt = load_device_tree(machine->dtb, &fdt_size);
-            if (!machine->fdt) {
-                error_report("load_device_tree() failed");
-                exit(1);
-            }
+        /* Compute the fdt load address in dram */
+        hwaddr kernel_ram_base = memmap[MICROCHIP_PFSOC_DRAM_LO].base;
+        hwaddr kernel_ram_size = memmap[MICROCHIP_PFSOC_DRAM_LO].size;
 
-            /* Compute the FDT load address in DRAM */
-            hwaddr kernel_ram_base = memmap[MICROCHIP_PFSOC_DRAM_LO].base;
-            hwaddr kernel_ram_size = memmap[MICROCHIP_PFSOC_DRAM_LO].size;
-
-            if (kernel_entry - kernel_ram_base >= kernel_ram_size) {
-                kernel_ram_base = memmap[MICROCHIP_PFSOC_DRAM_HI].base;
-                kernel_ram_size = mem_high_size;
-            }
-
-            fdt_load_addr = riscv_compute_fdt_addr(kernel_ram_base, kernel_ram_size,
-                                                   machine, &boot_info);
-            riscv_load_fdt(fdt_load_addr, machine->fdt);
-        } else {
-            warn_report_once("The QEMU microchip-icicle-kit machine does not "
-                             "generate a device tree, so no device tree is "
-                             "being provided to the guest.");
-            fdt_load_addr = 0;
+        if (kernel_entry - kernel_ram_base >= kernel_ram_size) {
+            kernel_ram_base = memmap[MICROCHIP_PFSOC_DRAM_HI].base;
+            kernel_ram_size = mem_high_size;
         }
+
+        fdt_load_addr = riscv_compute_fdt_addr(kernel_ram_base, kernel_ram_size,
+                                               machine, &boot_info);
+        riscv_load_fdt(fdt_load_addr, machine->fdt);
 
         /* Load the reset vector */
         riscv_setup_rom_reset_vec(machine, &s->soc.u_cpus, firmware_load_addr,
